@@ -142,7 +142,6 @@ class Server(SimulationObject):
         super().__init__(name) 
         
         self.m_type = self.Type.SERVER  
-        
         self.m_state = self.State.IDLE
         self.m_serviceDist = serviceTime
         
@@ -155,8 +154,7 @@ class Server(SimulationObject):
         if self.m_state == self.State.IDLE:
             ScheduleEventIn(0.0, "Placeholder time unit", self.StartProcessingEA(self))
             pass
-        
-        return super().NodeProcess(entity)
+        pass
     
     # Start processing EA/EM
     class StartProcessingEA(EventAction):
@@ -171,7 +169,6 @@ class Server(SimulationObject):
             self.m_source.StartProcessingEM()
             pass         
         pass
-    
     def StartProcessingEM(self):
         self.m_state = self.State.BUSY
         
@@ -200,7 +197,6 @@ class Server(SimulationObject):
             self.m_source.EndProcessingEM(self.m_entity)
             pass         
         pass
-    
     def EndProcessingEM(self, entity : 'Entity'):
         self.m_state = self.State.IDLE
         

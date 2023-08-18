@@ -20,5 +20,5 @@ class HistogramPanel(wx.Panel):
         self.ax.set_title("Simple sin wave")
         self.ax.set_xlabel("x")
         self.ax.set_ylabel("y")
-        self.canvas.draw()
+        #self.canvas.draw() this shows a separate window for the graph
 

@@ -3,6 +3,7 @@ import Selection
 import GraphicalElement
 from enum import Enum
 from SimProject import SimulationProject
+from SimulationObjects import SimulationObject, Source, Server, Sink
 
 class Canvas(wx.Panel):
     class DebugField(Enum):
@@ -24,11 +25,12 @@ class Canvas(wx.Panel):
     def __init__(self, parent, status_bar):
         super().__init__(parent)
         self.m_nextID = 0
-        self.m_status_bar_fields = 0
+        self.m_nodes = []
         self.m_myProject = SimulationProject
         
         # Debug status bar used to display node information
-        self.m_debug_status_bar = wx.StatusBar()         
+        self.m_debug_status_bar = status_bar         
+        self.m_status_bar_fields = 0
 
         # Popup menus
         self.m_canvasMenu = wx.Menu()
@@ -66,13 +68,17 @@ class Canvas(wx.Panel):
         
     def AddNode(self, node_type, center, label=None):
         # Implement the logic to add a graphical node
+        
+        self.m_nodes.append()
+        
         pass
         
     def InitializeOriginLocation(self, canvas_size : 'wx.Size'):
         # Implement the logic to set origin location
         self.m_canvasSize = canvas_size
         
-        width, height : int
+        width : int
+        height : int
         self.GetClientSize(width, height)
         self.m_originPoint = wx.Point2D(width / 2, height / 2)
         self.m_cameraPan.Translate(self.m_originPoint.m_x, self.m_originPoint.m_y)
@@ -80,8 +86,11 @@ class Canvas(wx.Panel):
         self.m_cameraZoom.Scale(self.m_zoomLevel, self.m_zoomLevel)
         
         # add a couple of nodes
+        originPosition = self.GetTransformedPoint(self.m_originPoint)
         
-        
+        self.AddNode(SimulationObject.Type.SOURCE, wx.Point2D(originPosition.m_x - 150, originPosition.m_y))
+        self.AddNode(SimulationObject.Type.SERVER, wx.Point2D(originPosition.m_x, originPosition.m_y))
+        self.AddNode(SimulationObject.Type.SINK, wx.Point2D(originPosition.m_x + 150, originPosition.m_y))
         pass
     
     def GetCameraTransform(self) -> 'wx.AffineMatrix2D':
@@ -132,7 +141,7 @@ class Canvas(wx.Panel):
         dc = wx.PaintDC(self)
         gc = wx.GraphicsContext.Create(dc)
                 
-        
+        dc.SetBackground(wx.WHITE_BRUSH)
         
         pass
     def OnSize(self, event):

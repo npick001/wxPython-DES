@@ -1,11 +1,10 @@
 import wx
 import wx.aui
 import numpy as np
-import wx.lib.agw.aui as aui
 import matplotlib.pyplot as plt
-from GraphingPanels import HistogramPanel
 from enum import Enum
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+from GraphingPanels import HistogramPanel
+import Canvas
 
 class MainFrame(wx.Frame):
     class Enums(Enum):
@@ -25,78 +24,80 @@ class MainFrame(wx.Frame):
         self.aui_manager = wx.aui.AuiManager(self)
 
         # Create a menu bar
-        menubar = wx.MenuBar()
+        self.menubar = wx.MenuBar()
+        self.m_debug_status_bar = wx.StatusBar()
 
         ### CREATE MENUS
         # File menu
-        file_menu = wx.Menu()
-        file_menu.Append(wx.ID_OPEN)
-        file_menu.Append(wx.ID_SAVE)
-        file_menu.Append(wx.ID_SAVEAS)
-        file_menu.Append(wx.ID_EXIT, "Exit\tAlt-F4", "Exit the application.")
+        self.file_menu = wx.Menu()
+        self.file_menu.Append(wx.ID_OPEN)
+        self.file_menu.Append(wx.ID_SAVE)
+        self.file_menu.Append(wx.ID_SAVEAS)
+        self.file_menu.Append(wx.ID_EXIT, "Exit\tAlt-F4", "Exit the application.")
         # Edit menu
-        edit_menu = wx.Menu()
-        edit_menu.Append(wx.ID_UNDO)
-        edit_menu.Append(wx.ID_REDO)
-        edit_menu.AppendSeparator()
-        edit_menu.Append(wx.ID_CUT)
-        edit_menu.Append(wx.ID_COPY)
-        edit_menu.Append(wx.ID_PASTE)
+        self.edit_menu = wx.Menu()
+        self.edit_menu.Append(wx.ID_UNDO)
+        self.edit_menu.Append(wx.ID_REDO)
+        self.edit_menu.AppendSeparator()
+        self.edit_menu.Append(wx.ID_CUT)
+        self.edit_menu.Append(wx.ID_COPY)
+        self.edit_menu.Append(wx.ID_PASTE)
         # View menu
-        view_menu = wx.Menu()
-        view_menu.Append(self.Enums.ID_CREATE_NOTEBOOK.value, "Create Notebook", "Notebooks hold Canvases, the basis for your simulation model.")
-        view_menu.Append(self.Enums.ID_CREATE_CANVAS.value, "Create Canvas", "Create a new Canvas in the currently selected Notebook.")
+        self.view_menu = wx.Menu()
+        self.view_menu.Append(self.Enums.ID_CREATE_NOTEBOOK.value, "Create Notebook", "Notebooks hold Canvases, the basis for your simulation model.")
+        self.view_menu.Append(self.Enums.ID_CREATE_CANVAS.value, "Create Canvas", "Create a new Canvas in the currently selected Notebook.")
         # Settings menu
-        settings_menu = wx.Menu()
-        settings_menu.Append(self.Enums.ID_MODEL_SETTINGS.value, "Model Settings", "Change Model Settings")
+        self.settings_menu = wx.Menu()
+        self.settings_menu.Append(self.Enums.ID_MODEL_SETTINGS.value, "Model Settings", "Change Model Settings")
         # Project menu
-        project_menu = wx.Menu()
-        project_menu.Append(self.Enums.ID_BUILD.value, "Build", "Build simulation code for currently selected canvas")
-        project_menu.Append(self.Enums.ID_RUN.value, "Run", "Run the built simulation code")
-        project_menu.Append(self.Enums.ID_BUILD_AND_RUN.value, "Build and Run", "Build & Run simulation for currently selected canvas")
+        self.project_menu = wx.Menu()
+        self.project_menu.Append(self.Enums.ID_BUILD.value, "Build", "Build simulation code for currently selected canvas")
+        self.project_menu.Append(self.Enums.ID_RUN.value, "Run", "Run the built simulation code")
+        self.project_menu.Append(self.Enums.ID_BUILD_AND_RUN.value, "Build and Run", "Build & Run simulation for currently selected canvas")
         # Statistics menu
-        stats_menu = wx.Menu()
-        stats_menu.Append(self.Enums.ID_INPUT_ANALYZER.value, "Input Analyzer")
+        self.stats_menu = wx.Menu()
+        self.stats_menu.Append(self.Enums.ID_INPUT_ANALYZER.value, "Input Analyzer")
 
         # Link menus to menubar
-        menubar.Append(file_menu, "File")
-        menubar.Append(edit_menu, "Edit")
-        menubar.Append(view_menu, "View")
-        menubar.Append(settings_menu, "Settings")
-        menubar.Append(project_menu, "Project")
-        menubar.Append(stats_menu, "Statistics")
+        self.menubar.Append(self.file_menu, "File")
+        self.menubar.Append(self.edit_menu, "Edit")
+        self.menubar.Append(self.view_menu, "View")
+        self.menubar.Append(self.settings_menu, "Settings")
+        self.menubar.Append(self.project_menu, "Project")
+        self.menubar.Append(self.stats_menu, "Statistics")
         
         # Set menu bar for this frame
-        self.SetMenuBar(menubar)
-        self.panel = HistogramPanel(self)
-        self.aui_manager.AddPane(self.panel, aui.AuiPaneInfo().Left)
-
+        self.SetMenuBar(self.menubar)
+        self.panel = Canvas.Canvas(self, self.m_debug_status_bar)
+        self.aui_manager.AddPane(self.panel, wx.aui.AuiPaneInfo().CenterPane())
+        self.Maximize(True)
+        
         # Update the aui manager
         self.aui_manager.Update()
         
         ### EVENT BINDING
         # File Menu
-        file_menu.Bind(wx.EVT_MENU, self.OnOpen)
-        file_menu.Bind(wx.EVT_MENU, self.OnSave)
-        file_menu.Bind(wx.EVT_MENU, self.OnSaveAs)
-        file_menu.Bind(wx.EVT_MENU, self.OnExit)
+        self.file_menu.Bind(wx.EVT_MENU, self.OnOpen)
+        self.file_menu.Bind(wx.EVT_MENU, self.OnSave)
+        self.file_menu.Bind(wx.EVT_MENU, self.OnSaveAs)
+        self.file_menu.Bind(wx.EVT_MENU, self.OnExit)
         # Edit Menu
-        edit_menu.Bind(wx.EVT_MENU, self.OnUndo)
-        edit_menu.Bind(wx.EVT_MENU, self.OnRedo)
-        edit_menu.Bind(wx.EVT_MENU, self.OnCut)
-        edit_menu.Bind(wx.EVT_MENU, self.OnCopy)
-        edit_menu.Bind(wx.EVT_MENU, self.OnPaste)
+        self.edit_menu.Bind(wx.EVT_MENU, self.OnUndo)
+        self.edit_menu.Bind(wx.EVT_MENU, self.OnRedo)
+        self.edit_menu.Bind(wx.EVT_MENU, self.OnCut)
+        self.edit_menu.Bind(wx.EVT_MENU, self.OnCopy)
+        self.edit_menu.Bind(wx.EVT_MENU, self.OnPaste)
         # View Menu
-        view_menu.Bind(wx.EVT_MENU, self.OnCreateNotebook)
-        view_menu.Bind(wx.EVT_MENU, self.OnCreateCanvas)
+        self.view_menu.Bind(wx.EVT_MENU, self.OnCreateNotebook)
+        self.view_menu.Bind(wx.EVT_MENU, self.OnCreateCanvas)
         # Settings Menu
-        settings_menu.Bind(wx.EVT_MENU, self.OnChangeModelSettings)
+        self.settings_menu.Bind(wx.EVT_MENU, self.OnChangeModelSettings)
         # Project Menu
-        project_menu.Bind(wx.EVT_MENU, self.OnBuild)
-        project_menu.Bind(wx.EVT_MENU, self.OnRun)
-        project_menu.Bind(wx.EVT_MENU, self.OnBuildAndRun)
+        self.project_menu.Bind(wx.EVT_MENU, self.OnBuild)
+        self.project_menu.Bind(wx.EVT_MENU, self.OnRun)
+        self.project_menu.Bind(wx.EVT_MENU, self.OnBuildAndRun)
         # Statistics Menu
-        stats_menu.Bind(wx.EVT_MENU, self.OnClickAnalyzer)
+        self.stats_menu.Bind(wx.EVT_MENU, self.OnClickAnalyzer)
     
     ### EVENT HANDLING
     # Essentially the deconstructor
