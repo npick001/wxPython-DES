@@ -38,7 +38,7 @@ class FIFO:
             pass
         
         entity.EnterQueue(GetSimulationTime())
-        m_size += 1
+        self.m_size += 1
         pass
     
     def GetEntity(self) -> 'Entity':
@@ -51,7 +51,7 @@ class FIFO:
         
         self.m_cdfWaits += toReturn.LeaveQueue(GetSimulationTime())
         self.m_queueSizeSum += self.m_size
-        m_size -= 1
+        self.m_size -= 1
         return toReturn
     
     def ViewEntity(self) -> 'Entity':

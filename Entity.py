@@ -34,6 +34,9 @@ class Entity:
     
     # stats stamping fns
     def EnterQueue(self, timeNow : float):
+        self.m_enterQueue = timeNow
         pass
     def LeaveQueue(self, timeNow : float):
-        pass
+        self.m_leaveQueue = timeNow
+        self.waitTime = self.m_leaveQueue - self.m_enterQueue
+        return self.waitTime

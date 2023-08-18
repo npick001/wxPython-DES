@@ -2,10 +2,9 @@ import wx
 import Distributions
 from Entity import Entity
 from MainFrame import MainFrame
-from SimulationObjects import Source, Sink
+from SimulationObjects import Source, Server, Sink
 
-from SimulationExecutive import GetSimulationTime
-from SimulationExecutive import RunSimulation
+from SimulationExecutive import GetSimulationTime, RunSimulation
 
 ## SHOULD BE COMPLETED FOR NOW
 
@@ -20,9 +19,11 @@ if __name__ == '__main__':
     # app.MainLoop()
     
     src = Source("Source", 10, Entity(GetSimulationTime()), Distributions.Exponential(1))
+    server = Server("Server", Distributions.Triangular(1, 2, 3))
     sink = Sink("Sink")
     
-    src.AddNext(sink)
+    src.AddNext(server)
+    server.AddNext(sink)
     
     RunSimulation()    
     pass

@@ -1,5 +1,5 @@
 import random
-import FIFO
+from FIFO import FIFO
 from Entity import Entity
 from enum import Enum
 from SimulationExecutive import EventAction
@@ -134,15 +134,85 @@ class Source(SimulationObject):
     pass
 
 class Server(SimulationObject):
+    class State(Enum):
+        BUSY = 0
+        IDLE = 1
     
-    def __init__(self, name):
+    def __init__(self, name, serviceTime : 'Distribution'):
         super().__init__(name) 
         
-        self.m_type = self.Type.SERVER        
+        self.m_type = self.Type.SERVER  
+        
+        self.m_state = self.State.IDLE
+        self.m_serviceDist = serviceTime
+        
+        self.m_queue = FIFO()
         pass
     
     def NodeProcess(self, entity: Entity) -> None:
+        self.m_queue.AddEntity(entity)
+        
+        if self.m_state == self.State.IDLE:
+            ScheduleEventIn(0.0, "Placeholder time unit", self.StartProcessingEA(self))
+            pass
+        
         return super().NodeProcess(entity)
+    
+    # Start processing EA/EM
+    class StartProcessingEA(EventAction):
+        m_source : 'Server'
+        
+        def __init__(self, svr : 'Server'):
+            super().__init__()
+            self.m_source = svr
+            pass
+            
+        def Execute(self):
+            self.m_source.StartProcessingEM()
+            pass         
+        pass
+    
+    def StartProcessingEM(self):
+        self.m_state = self.State.BUSY
+        
+        entity : 'Entity'
+        entity = self.m_queue.GetEntity()
+        
+        serviceTime = self.m_serviceDist.GetRV()
+        
+        message = "Time: " + str(GetSimulationTime()) + "\tServer " + str(self.m_id) + "\tStart Processing\n"
+        print(message)
+        
+        ScheduleEventIn(serviceTime, "Placeholder time unit", self.EndProcessingEA(self, entity))
+        pass
+    
+    # End processing EA/EM
+    class EndProcessingEA(EventAction):
+        m_source : 'Server'
+        
+        def __init__(self, svr : 'Server', entity : 'Entity'):
+            super().__init__()
+            self.m_source = svr
+            self.m_entity = entity
+            pass
+            
+        def Execute(self):
+            self.m_source.EndProcessingEM(self.m_entity)
+            pass         
+        pass
+    
+    def EndProcessingEM(self, entity : 'Entity'):
+        self.m_state = self.State.IDLE
+        
+        if not self.m_queue.IsEmpty():
+            ScheduleEventIn(0.0, "Placeholder time unit", self.StartProcessingEA(self))
+            pass
+        
+        message = "Time: " + str(GetSimulationTime()) + "\tServer " + str(self.m_id) + "\tEnd Processing\n"
+        print(message)
+        
+        self.Depart(entity)        
+        pass
     
     pass
 
