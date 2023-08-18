@@ -2,9 +2,7 @@ from queue import PriorityQueue
 import Entity
 from enum import Enum
 
-## SHOULD BE COMPLETED FOR NOW
-## NO TESTING HAS BEEN DONE YET
-## TEST WITH SIMULATION OBJECTS WHEN THATS DONE
+## COMPLETED
 
 class TimeUnit(Enum):
     SECONDS = 1
@@ -32,9 +30,9 @@ class SimulationExecutive:
             self.m_time = time
             self.m_ea = eventAction
             pass
-        def GetTime(self):
-            return self.m_time
-    
+        def __lt__(self, other : 'SimulationExecutive.Event'):
+            return self.m_time < other.m_time
+            
     @classmethod
     def GetSimulationTime(cls) -> float:
         return cls.m_simTime
@@ -80,7 +78,7 @@ class SimulationExecutive:
         ## later will need to do some time unit conversions
         eventTime = GetSimulationTime() + deltaTime
         event = cls.Event(eventTime, ea)
-        cls.m_events.put((eventTime, event))
+        cls.m_events.put(event)
         pass
     
     @classmethod
@@ -89,7 +87,7 @@ class SimulationExecutive:
         ## later will need to do some time unit conversions
         eventTime = time
         event = cls.Event(eventTime, ea)
-        cls.m_events.put((eventTime, event))
+        cls.m_events.put(event)
         pass
     
             

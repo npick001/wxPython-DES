@@ -30,13 +30,13 @@ class SimulationObject:
         self.m_type = self.Type.DEFAULT
         
         # routing vars
-        self.m_next = set()
-        self.m_previous = set()
+        self.m_next = []
+        self.m_previous = []
         pass
     
     def Arrive(self, entity : 'Entity'):
         
-        message = "time = " + GetSimulationTime() + "\t" + self.m_name + "\tArrive\tEntity: " + entity.m_ID
+        message = "time = " + str(GetSimulationTime()) + "\t" + str(self.m_name) + "\tArrive\tEntity: " + str(entity.m_ID)
         print(message)
         
         self.NodeProcess(entity)
@@ -62,10 +62,10 @@ class SimulationObject:
         pass        
         
     def AddNext(self, next : 'SimulationObject'):
-        self.m_next.add(next)
+        self.m_next.append(next)
         pass 
     def AddPrevious(self, m_previous : 'SimulationObject'):
-        self.m_previous.add(m_previous)
+        self.m_previous.append(m_previous)
         pass    
     
     # returns a set of simobjs
@@ -113,7 +113,7 @@ class Source(SimulationObject):
     def ArriveEM(self):
         self.Depart(self.m_entity.New())
         
-        if(self.m_infiniteGen == True):
+        if(self.m_infiniteGen == False):
             self.m_numToGen -= 1
             pass
         
@@ -123,7 +123,7 @@ class Source(SimulationObject):
         if(self.m_numToGen > 0 or self.m_infiniteGen):
             arrivalDelta = self.m_arrivalDist.GetRV()
             
-            message = "Scheduling source arrival event in " + arrivalDelta
+            message = "Scheduling source arrival event in " + str(arrivalDelta)
             print(message)
 
             #wxLogMessage(message)
@@ -156,7 +156,7 @@ class Sink(SimulationObject):
     
     def NodeProcess(self, entity: Entity) -> None:
         
-        message = "Deleting " + entity.m_ID + "\n"
+        message = "Deleting " + str(entity.m_ID) + "\n"
         print(message)        
         
         entity.SetDeletionTime(GetSimulationTime())        

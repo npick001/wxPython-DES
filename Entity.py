@@ -10,16 +10,15 @@ class Entity:
         BATCH = "Batch"
    
     # static class members
-    m_nextID : int
+    m_nextID = 0
         
     def __init__(self, creationTime : float):
         self.m_creationTime = creationTime
         
-        self.m_nextID = 0
-        self.m_ID = self.m_nextID + 1
+        self.m_ID = Entity.m_nextID
         self.m_sourceID = -1
         
-        self.m_nextID += 1
+        Entity.m_nextID += 1
         pass
     
     @classmethod
