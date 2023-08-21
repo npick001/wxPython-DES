@@ -1,22 +1,30 @@
 import wx
-import Entity
+import Distributions
+from enum import Enum
+from Entity import Entity
 from GraphicalEdge import GraphicalEdge
 from GraphicalElement import GraphicalElement
-from enum import Enum
-from Distributions import Distribution
 from SimulationObjects import SimulationObject
+from SimulationExecutive import GetSimulationTime
 
 class GraphicalNode(GraphicalElement):
-    class SizerLocations(Enum):
+    class SizerLocations(int):
         TOP_LEFT = 0
         TOP_RIGHT = 1
         BOTTOM_LEFT = 2
         BOTTOM_RIGHT = 3     
         pass
     
-    def __init__(self, id, parent : 'wx.Window', center : 'wx.Point2D', text):
+    # static member variables
+    m_nextID = 1
+    m_cornerRadius = 10
+    
+    def __init__(self, name, parent : 'wx.Panel', center : 'wx.Point2D'):
         
         self.m_nodeType = SimulationObject.Type.DEFAULT
+        self.m_name = name
+        self.m_id = GraphicalNode.m_nextID
+        GraphicalNode.m_nextID += 1       
         self.m_next = []
         self.m_previous = []
         self.m_properties = []
@@ -39,26 +47,26 @@ class GraphicalNode(GraphicalElement):
         
         ## user sizing nodes
         # TOP_LEFT
-        x = self.m_position.m_x - (self.m_bodyShape.m_width / 2)
-        y = self.m_position.m_y - (self.m_bodyShape.m_height / 2)
-        self.m_sizers[self.SizerLocations.TOP_LEFT] = wx.Rect2D(x, y, self.m_bodyShape.m_width, self.m_bodyShape.m_height)
+        x = self.m_position.x - (self.m_bodyShape.width / 2)
+        y = self.m_position.y - (self.m_bodyShape.height / 2)
+        self.m_sizers.append(wx.Rect2D(x, y, self.m_bodyShape.width, self.m_bodyShape.height))
         # TOP_RIGHT
-        x = self.m_position.m_x + (self.m_bodyShape.m_width / 2) - self.m_sizerSize.GetWidth()
-        y = self.m_position.m_y - (self.m_bodyShape.m_height / 2)
-        self.m_sizers[self.SizerLocations.TOP_RIGHT] = wx.Rect2D(x, y, self.m_bodyShape.m_width, self.m_bodyShape.m_height)
+        x = self.m_position.x + (self.m_bodyShape.width / 2) - self.m_sizerSize.GetWidth()
+        y = self.m_position.y - (self.m_bodyShape.height / 2)
+        self.m_sizers.append(wx.Rect2D(x, y, self.m_bodyShape.width, self.m_bodyShape.height))
         # BOTTOM_LEFT
-        x = self.m_position.m_x - (self.m_bodyShape.m_width / 2)
-        y = self.m_position.m_y + (self.m_bodyShape.m_height / 2) - self.m_sizerSize.GetHeight()
-        self.m_sizers[self.SizerLocations.TOP_RIGHT] = wx.Rect2D(x, y, self.m_bodyShape.m_width, self.m_bodyShape.m_height)        
+        x = self.m_position.x - (self.m_bodyShape.width / 2)
+        y = self.m_position.y + (self.m_bodyShape.height / 2) - self.m_sizerSize.GetHeight()
+        self.m_sizers.append(wx.Rect2D(x, y, self.m_bodyShape.width, self.m_bodyShape.height))    
         # BOTTOM_RIGHT
-        x = self.m_position.m_x - (self.m_bodyShape.m_width / 2) - self.m_sizerSize.GetWidth()
-        y = self.m_position.m_y - (self.m_bodyShape.m_height / 2) - self.m_sizerSize.GetHeight()
-        self.m_sizers[self.SizerLocations.TOP_RIGHT] = wx.Rect2D(x, y, self.m_bodyShape.m_width, self.m_bodyShape.m_height)
+        x = self.m_position.x - (self.m_bodyShape.width / 2) - self.m_sizerSize.GetWidth()
+        y = self.m_position.y - (self.m_bodyShape.height / 2) - self.m_sizerSize.GetHeight()
+        self.m_sizers.append(wx.Rect2D(x, y, self.m_bodyShape.width, self.m_bodyShape.height))
         
         ## io nodes
-        self.m_inputRect = wx.Rect2D(-self.m_bodyShape.m_width / 2 - self.m_ioSize.GetWidth() / 2, -self.m_ioSize.GetHeight() / 2,
+        self.m_inputRect = wx.Rect2D(-self.m_bodyShape.width / 2 - self.m_ioSize.GetWidth() / 2, -self.m_ioSize.GetHeight() / 2,
                                      self.m_ioSize.GetWidth(), self.m_ioSize.GetHeight())
-        self.m_outputRect = wx.Rect2D(self.m_bodyShape.m_width / 2 - self.m_ioSize.GetWidth() / 2, -self.m_ioSize.GetHeight() / 2,
+        self.m_outputRect = wx.Rect2D(self.m_bodyShape.width / 2 - self.m_ioSize.GetWidth() / 2, -self.m_ioSize.GetHeight() / 2,
                                      self.m_ioSize.GetWidth(), self.m_ioSize.GetHeight())
         pass
     
@@ -67,7 +75,12 @@ class GraphicalNode(GraphicalElement):
         pass
     
     def GetProperties(self) -> list['GraphicalEdge']:
-        return self.pro
+        return self.m_properties
+    
+    def GetTransform(self):
+        transform = wx.AffineMatrix2D()
+        transform.Translate(self.m_position.x, self.m_position.y)     
+        return transform
     
     def AddNext(self, next : 'GraphicalNode'):
         self.m_next.append(next)
@@ -75,48 +88,96 @@ class GraphicalNode(GraphicalElement):
     def AddPrevious(self, previous : 'GraphicalNode'):
         self.m_previous.append(previous)
         pass 
-    def GetNext(self, next : list['GraphicalNode']):
+    def GetNext(self) -> list['GraphicalNode']:
         return self.m_next   
-    def GetPrevious(self, previous : list['GraphicalNode']):
+    def GetPrevious(self) -> list['GraphicalNode']:
         return self.m_previous  
     
     
 ### BEGIN INHERITED SIMULATION OBJECTS
-class Source(GraphicalNode):   
+class GSource(GraphicalNode):   
     m_entity = Entity
-    
-    def __init__(self, name, numGen, entity : 'Entity', arrivalDist : 'Distribution'):
-        super().__init__(name)
+     
+    def __init__(self, name, parent, center):
+        super().__init__(name, parent, center)
         
         self.m_type = SimulationObject.Type.SOURCE
         
-        self.m_numToGen = numGen
-        self.m_entity = entity
-        self.m_arrivalDist = arrivalDist
+        self.m_numToGen = 10
+        self.m_entity = Entity(GetSimulationTime())
+        self.m_arrivalDist = Distributions.Exponential(0.25)
         self.m_infiniteGen = False
         pass    
+    
+    def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
+        ## OVERRIDDEN VIRTUAL FUNCTION 
+        
+        localToWindow : 'wx.AffineMatrix2D'
+        localToWindow = camera
+        localToWindow.Concat(self.GetTransform())
+        
+        gc.SetTransform(gc.CreateMatrix(localToWindow))
+        gc.SetPen(wx.TRANSPARENT_PEN)
+        
+        # draw the body 
+        gc.SetBrush(wx.Brush(self.m_bodyColor))
+        gc.DrawRoundedRectangle(self.m_bodyShape.x, self.m_bodyShape.y, self.m_bodyShape.width, self.m_bodyShape.height, GraphicalNode.m_cornerRadius)
+        
+        # draw the output rectangle
+        gc.SetBrush(wx.Brush(self.m_ioColor))
+        gc.DrawRectangle(self.m_outputRect.x, self.m_outputRect.y, self.m_outputRect.width, self.m_outputRect.height)
+        
+        #gc.SetFont(wx.NORMAL_FONT, self.m_labelColor)
+        #gc.GetFullTextExtent(self.m_name)
+        pass
     pass
 
-class Server(GraphicalNode):
+class GServer(GraphicalNode):
     class State(Enum):
         BUSY = 0
         IDLE = 1
     
-    def __init__(self, name, serviceTime : 'Distribution'):
-        super().__init__(name) 
+    def __init__(self, name, parent, center):
+        super().__init__(name, parent, center) 
         
         self.m_type = SimulationObject.Type.SERVER  
         self.m_state = self.State.IDLE
-        self.m_serviceDist = serviceTime
+        self.m_serviceDist = Distributions.Triangular(1, 2, 3)
+        pass
+    
+    def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
+        ## OVERRIDDEN VIRTUAL FUNCTION 
+        
+        localToWindow : 'wx.AffineMatrix2D'
+        localToWindow = camera
+        localToWindow.Concat(self.GetTransform())
+        
+        gc.SetTransform(gc.CreateMatrix(localToWindow))
+        gc.SetPen(wx.TRANSPARENT_PEN)
+        
+        # draw the body 
+        gc.SetBrush(wx.Brush(self.m_bodyColor))
+        gc.DrawRoundedRectangle(self.m_bodyShape.x, self.m_bodyShape.y, self.m_bodyShape.width, self.m_bodyShape.height, GraphicalNode.m_cornerRadius)
+        
+        # draw the input rectangle
+        gc.SetBrush(wx.Brush(self.m_ioColor))
+        gc.DrawRectangle(self.m_inputRect.x, self.m_inputRect.y, self.m_inputRect.width, self.m_inputRect.height)
+        
+        # draw the output rectangle
+        gc.DrawRectangle(self.m_outputRect.x, self.m_outputRect.y, self.m_outputRect.width, self.m_outputRect.height)
         pass
     pass
 
-class Sink(GraphicalNode):
+class GSink(GraphicalNode):
     
-    def __init__(self, name):
-        super().__init__(name)
+    def __init__(self, name, parent, center):
+        super().__init__(name, parent, center) 
         
         self.m_type = SimulationObject.Type.SINK              
         pass 
+    
+    def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
+        ## VIRTUAL FUNCTION FOR CHILDREN TO IMPLEMENT
+        pass
     pass    
     

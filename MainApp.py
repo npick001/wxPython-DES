@@ -9,19 +9,19 @@ from SimulationExecutive import GetSimulationTime, RunSimulation
 
 class MyApp(wx.App):
     def OnInit(self):
-        self.frame = MainFrame(parent=None, title="Separate Frame Example")
+        self.frame = MainFrame(parent=None, title="Python Discrete Simulator")
         self.frame.Show()
         return True
 
 if __name__ == '__main__':  
-    src = Source("Source", 10, Entity(GetSimulationTime()), Distributions.Exponential(1))
-    server = Server("Server", Distributions.Triangular(1, 2, 3))
-    sink = Sink("Sink")
+    # src = Source("Source", 10, Entity(GetSimulationTime()), Distributions.Exponential(1))
+    # server = Server("Server", Distributions.Triangular(1, 2, 3))
+    # sink = Sink("Sink")
     
-    src.AddNext(server)
-    server.AddNext(sink)
+    # src.AddNext(server)
+    # server.AddNext(sink)
     
-    RunSimulation()    
+    # RunSimulation()    
     
     app = MyApp(False)
     app.MainLoop()

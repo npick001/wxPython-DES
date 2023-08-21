@@ -1,5 +1,5 @@
-import GraphicalElement
 from enum import Enum
+from GraphicalElement import GraphicalElement
 
 class Selection:
     class State(Enum):
@@ -12,6 +12,11 @@ class Selection:
         STATES_MAX = 6
         
     def __init__(self):
-        m_element = GraphicalElement
-        m_state = self.State.NONE
+        self.m_element = GraphicalElement()
+        self.m_state = self.State.NONE
+        pass
+    
+    def Reset(self):
+        self.m_element = GraphicalElement()
+        self.m_state = self.State.NONE
         pass

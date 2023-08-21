@@ -50,6 +50,8 @@ class SimulationExecutive:
             cls.m_simTime = thisEvent.m_time
             thisEvent.m_ea.Execute()            
             pass
+
+        cls.m_simTime = 0
         pass
     
     # @staticmethod

@@ -22,6 +22,7 @@ class MainFrame(wx.Frame):
         
         # Initialize the AUI manager
         self.aui_manager = wx.aui.AuiManager(self)
+        self.Maximize(True)
 
         # Create a menu bar
         self.menubar = wx.MenuBar()
@@ -69,8 +70,8 @@ class MainFrame(wx.Frame):
         # Set menu bar for this frame
         self.SetMenuBar(self.menubar)
         self.panel = Canvas.Canvas(self, self.m_debug_status_bar)
-        self.aui_manager.AddPane(self.panel, wx.aui.AuiPaneInfo().CenterPane())
-        self.Maximize(True)
+        self.aui_manager.AddPane(self.panel, wx.aui.AuiPaneInfo().CenterPane().Dockable(True))
+        self.panel.InitializeOriginLocation(self.GetSize())
         
         # Update the aui manager
         self.aui_manager.Update()

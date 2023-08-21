@@ -1,7 +1,7 @@
 import wx
-import Canvas
 import GraphicalNode
 from Entity import Entity
+#from Canvas import Canvas
 from GraphicalNode import GSource, GServer, GSink
 from SimulationObjects import SimulationObject, Source, Server, Sink
 
@@ -14,20 +14,24 @@ class SimulationProject:
     
     
 class NodeFactory:
-    def CreateGraphicalNode(self, type : 'SimulationObject.Type', center : 'wx.Point2D', label) -> 'SimulationObject':
+    def __init__(self) -> None:
+        pass
+    
+    @classmethod
+    def CreateGraphicalNode(cls, type : 'SimulationObject.Type', parent,  center : 'wx.Point2D', label=None) -> 'SimulationObject':
         
         entity = Entity(GetSimulationTime())
         if(type == SimulationObject.Type.SOURCE):
-            
-            return GSource()
+            source = GSource("Source", parent, center)            
+            return source
         
         elif(type == SimulationObject.Type.SERVER):
-        
-            return GServer()
+            server = GServer("Server", parent, center)
+            return server
         
         elif(type == SimulationObject.Type.SINK):
-        
-            return GSink()
+            sink = GSink("Sink", parent, center)
+            return sink
         
         else:
             print("ERROR IN CREATEGRAPHICALNODE, TYPE DOES NOT EXIST")
