@@ -20,7 +20,6 @@ class NodeFactory:
     @classmethod
     def CreateGraphicalNode(cls, type : 'SimulationObject.Type', parent,  center : 'wx.Point2D', label=None) -> 'SimulationObject':
         
-        entity = Entity(GetSimulationTime())
         if(type == SimulationObject.Type.SOURCE):
             source = GSource("Source", parent, center)            
             return source

@@ -113,7 +113,7 @@ class GSource(GraphicalNode):
         ## OVERRIDDEN VIRTUAL FUNCTION 
         
         localToWindow : 'wx.AffineMatrix2D'
-        localToWindow = camera
+        localToWindow = wx.AffineMatrix2D(camera)
         localToWindow.Concat(self.GetTransform())
         
         gc.SetTransform(gc.CreateMatrix(localToWindow))
@@ -149,7 +149,7 @@ class GServer(GraphicalNode):
         ## OVERRIDDEN VIRTUAL FUNCTION 
         
         localToWindow : 'wx.AffineMatrix2D'
-        localToWindow = camera
+        localToWindow = wx.AffineMatrix2D(camera) 
         localToWindow.Concat(self.GetTransform())
         
         gc.SetTransform(gc.CreateMatrix(localToWindow))
@@ -177,7 +177,22 @@ class GSink(GraphicalNode):
         pass 
     
     def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
-        ## VIRTUAL FUNCTION FOR CHILDREN TO IMPLEMENT
+        ## OVERRIDDEN VIRTUAL FUNCTION 
+        
+        localToWindow : 'wx.AffineMatrix2D'
+        localToWindow = wx.AffineMatrix2D(camera) 
+        localToWindow.Concat(self.GetTransform())
+        
+        gc.SetTransform(gc.CreateMatrix(localToWindow))
+        gc.SetPen(wx.TRANSPARENT_PEN)
+        
+        # draw the body 
+        gc.SetBrush(wx.Brush(self.m_bodyColor))
+        gc.DrawRoundedRectangle(self.m_bodyShape.x, self.m_bodyShape.y, self.m_bodyShape.width, self.m_bodyShape.height, GraphicalNode.m_cornerRadius)
+        
+        # draw the input rectangle
+        gc.SetBrush(wx.Brush(self.m_ioColor))
+        gc.DrawRectangle(self.m_inputRect.x, self.m_inputRect.y, self.m_inputRect.width, self.m_inputRect.height)
         pass
     pass    
     

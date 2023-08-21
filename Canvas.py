@@ -42,6 +42,7 @@ class Canvas(wx.Panel):
 
         # Selection things
         self.m_selection = Selection()
+        self.m_previousMousePosition : 'wx.Point2D'
         
         # Viewing and transformations
         self.m_isPanning = False
@@ -57,16 +58,16 @@ class Canvas(wx.Panel):
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleDown)
-        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleUp)
-        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnLeftDown)
-        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnLeftUp)
-        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMotion)
-        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMouseWheel)
-        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnRightUp)
-        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnLeaveWindow)
-        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnEnterWindow)
-        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnCharHook)
-        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnDeleteKey)
+        self.Bind(wx.EVT_MIDDLE_UP, self.OnMiddleUp)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
+        self.Bind(wx.EVT_LEFT_UP, self.OnLeftUp)
+        self.Bind(wx.EVT_MOTION, self.OnMotion)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
+        self.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
+        self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeaveWindow)
+        self.Bind(wx.EVT_ENTER_WINDOW, self.OnEnterWindow)
+        #self.Bind(wx.EVT_MIDDLE_DOWN, self.OnCharHook)
+        #self.Bind(wx.EVT_MIDDLE_DOWN, self.OnDeleteKey)
         
     def AddNode(self, node_type : 'SimulationObject.Type', center : 'wx.Point2D', label=None):
         # Implement the logic to add a graphical node
@@ -87,10 +88,11 @@ class Canvas(wx.Panel):
         x = width / 2
         y = height / 2       
         
-        self.m_originPoint = wx.Point2D(x, y)
+        self.m_originPoint = wx.Point2D(0, 0)
         self.m_cameraPan.Translate(x, y)
         self.m_zoomLevel = self.m_zoomLevel * 1
         self.m_cameraZoom.Scale(self.m_zoomLevel, self.m_zoomLevel)
+        #self.m_cameraPan.Translate(-x, -y)
         
         ### THIS LINE NEEDS TO BE CALLED
         # REASON WHY:
@@ -99,24 +101,28 @@ class Canvas(wx.Panel):
         self.TransformPoint(self.m_originPoint)
 
         # add a couple of nodes
-        #self.AddNode(SimulationObject.Type.SOURCE, wx.Point2D(self.m_originPoint.x - 150, self.m_originPoint.y))
-        self.AddNode(SimulationObject.Type.SERVER, wx.Point2D(self.m_originPoint.x, self.m_originPoint.y))
-        #self.AddNode(SimulationObject.Type.SINK, wx.Point2D(originPosition.m_x + 150, originPosition.m_y))
+        sourcePos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
+        sourcePos.x -= 500       
+         
+        serverPos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)       
+        
+        sinkPos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
+        sinkPos.x += 500  
+        
+        self.AddNode(SimulationObject.Type.SOURCE, wx.Point2D(sourcePos.x, sourcePos.y))
+        self.AddNode(SimulationObject.Type.SERVER, wx.Point2D(serverPos.x, serverPos.y))
+        self.AddNode(SimulationObject.Type.SINK, wx.Point2D(sinkPos.x, sinkPos.y))
         pass
     
     def GetCameraTransform(self) -> 'wx.AffineMatrix2D':
         
-        cameraTransform : wx.AffineMatrix2D
-        cameraTransform = self.m_cameraZoom # scaling
+        cameraTransform = wx.AffineMatrix2D(self.m_cameraZoom)
         cameraTransform.Concat(self.m_cameraPan) # translating
-        
         return cameraTransform
     
-    def TransformPoint(self, pointToTransform : wx.Point2D) -> 'wx.Point2D':
+    def TransformPoint(self, pointToTransform : 'wx.Point2D'):
         
         cTransform = wx.AffineMatrix2D()
-        transformedPoint = wx.Point2D()
-        
         cTransform = self.GetCameraTransform()
         cTransform.Invert()
         cTransform.TransformPoint(pointToTransform)
@@ -138,7 +144,7 @@ class Canvas(wx.Panel):
         # Implement the logic to get the next ID
         pass
         
-    def SetSimulatioProject(self, parent_project):
+    def SetSimulationProject(self, parent_project):
         # Implement the logic to set the simulation project
         pass
         
@@ -146,55 +152,77 @@ class Canvas(wx.Panel):
         # Implement the logic to populate the canvas after XML deserialization
         pass
         
-    def OnPaint(self, event):
+    def OnPaint(self, event : 'wx.PaintEvent'):
         # Implement the logic to handle the paint event
         dc = wx.PaintDC(self)
         gc : 'wx.GraphicsContext'
         gc = wx.GraphicsContext.Create(dc)
-                
-        #dc.SetBackground(wx.WHITE_BRUSH)
         
-        if gc:            
+        if gc:          
             for node in self.m_nodes:
                 node : 'GraphicalNode'
+                
+                print(f"Drawing node: {node.m_name}")
+                print(f"Added node at: {node.m_position.x}, {node.m_position.y}")
+                print(f"Camera Transform: {node.GetTransform()}")
                 node.Draw(self.GetCameraTransform(), gc)
                 pass  
             pass       
         pass
-    def OnSize(self, event):
+    def OnSize(self, event : 'wx.SizeEvent'):
         self.Refresh()
         pass
-    def OnMiddleDown(self, event):
+    def OnMiddleDown(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the middle mouse button down event
         pass
-    def OnMiddleUp(self, event):
+    def OnMiddleUp(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the middle mouse button down event
         pass   
-    def OnLeftDown(self, event):
+    def OnLeftDown(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the middle mouse button down event
         pass
-    def OnLeftUp(self, event):
+    def OnLeftUp(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the middle mouse button down event
         pass
-    def OnMotion(self, event):
+    def OnMotion(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the middle mouse button down event
         pass
-    def OnMouseWheel(self, event):
+    def OnMouseWheel(self, event : 'wx.MouseEvent'):
+        # Implement the logic to handle the middle mouse button down event
+        
+        mousePosition : 'wx.Point2D'
+        mousePosition = event.GetPosition()
+        self.m_previousMousePosition = mousePosition
+        
+        # determine the zoom scale factor
+        scaleFactor = pow((0.1 * event.GetWheelRotation() / event.GetWheelDelta()), 2)
+        
+        # transform point into local coords
+        self.TransformPoint(mousePosition)
+        
+        # adjust the scale and translation of the camera
+        self.m_cameraPan.Translate(-mousePosition.x, -mousePosition.y)
+        self.m_cameraZoom.Scale(scaleFactor, scaleFactor)
+        self.m_cameraPan.Translate(mousePosition.x, mousePosition.y)
+        self.m_zoomLevel = self.m_zoomLevel * scaleFactor
+        
+        self.Refresh()
+        
+        
+        pass
+    def OnRightUp(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the middle mouse button down event
         pass
-    def OnRightUp(self, event):
+    def OnLeaveWindow(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the middle mouse button down event
         pass
-    def OnLeaveWindow(self, event):
+    def OnEnterWindow(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the middle mouse button down event
         pass
-    def OnEnterWindow(self, event):
+    def OnCharHook(self, event : 'wx.KeyEvent'):
         # Implement the logic to handle the middle mouse button down event
         pass
-    def OnCharHook(self, event):
-        # Implement the logic to handle the middle mouse button down event
-        pass
-    def OnDeleteKey(self, event):
+    def OnDeleteKey(self, event : 'wx.KeyEvent'):
         # Implement the logic to handle the middle mouse button down event
         pass
     
