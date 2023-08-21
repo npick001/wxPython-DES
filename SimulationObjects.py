@@ -1,13 +1,12 @@
 import random
+from enum import Enum
 from FIFO import FIFO
 from Entity import Entity
-from enum import Enum
-from SimulationExecutive import EventAction
 from Distributions import Distribution
+from SimulationExecutive import EventAction
 
 ## SimExec Functions
 from SimulationExecutive import GetSimulationTime
-from SimulationExecutive import RunSimulation
 from SimulationExecutive import ScheduleEventIn
 from SimulationExecutive import ScheduleEventAt
 
@@ -52,11 +51,12 @@ class SimulationObject:
             #error
             pass
         
+        # CHANGE FOR ROUTING LOGIC
         nextLoc = random.randint(0, self.m_next.__len__() - 1)
         nextObj[nextLoc].Arrive(entity)        
         pass
         
-    def NodeProcess(self, entity: 'Entity') -> None:
+    def NodeProcess(self, entity: 'Entity'):
         ## VIRTUAL FN TO BE IMPLEMENTED BY CHILDREN
         ## THIS IS AN ERROR IF CALLED
         pass        
@@ -73,7 +73,6 @@ class SimulationObject:
         return self.m_next
     def GetPrevious(self):
         return self.m_previous
-    
     pass
 
 ### BEGIN INHERITED SIMULATION OBJECTS
