@@ -21,7 +21,6 @@ class Selection:
         STATES_MAX = 6
         
     def __init__(self, element = None, state : 'Selection.State' = None):
-        self.m_element = element
         
         if(element == None):
             self.m_element = GraphicalEdge.GraphicalEdge()

@@ -24,15 +24,16 @@ class GraphicalNode(GraphicalElement):
         
         self.m_nodeType = SimulationObject.Type.DEFAULT
         self.m_name = name
-        self.m_label = name        
         self.m_id = GraphicalNode.m_nextID
         GraphicalNode.m_nextID += 1       
+        self.m_label = "GNode " + str(self.m_id)        
         self.m_next = []
         self.m_previous = []
         self.m_properties = []
         self.m_sizers = []
         self.m_inputs = []
         self.m_outputs = []
+        self.m_is_selected = False
         
         ## graphical characteristics
         # size
@@ -194,8 +195,11 @@ class GSource(GraphicalNode):
         
         # draw the body 
         gc.SetBrush(wx.Brush(self.m_bodyColor))
+        if self.m_is_selected:
+            gc.SetPen(wx.Pen(wx.BLUE, 2))
+            pass
         gc.DrawRoundedRectangle(self.m_bodyShape.x, self.m_bodyShape.y, self.m_bodyShape.width, self.m_bodyShape.height, GraphicalNode.m_cornerRadius)
-        
+           
         # draw the output rectangle
         gc.SetBrush(wx.Brush(self.m_ioColor))
         gc.DrawRectangle(self.m_outputRect.x, self.m_outputRect.y, self.m_outputRect.width, self.m_outputRect.height)

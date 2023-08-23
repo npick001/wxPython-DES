@@ -40,7 +40,7 @@ class GraphicalEdge(GraphicalElement):
         self.m_source = source
         self.m_sourceID = source.m_id
         self.m_sourcePoint = source.GetOutputPoint()
-        self.m_source.m_outputs.append(self)
+        self.m_source.m_inputs.append(self)
         
         if self.m_destination:
             return
@@ -79,6 +79,28 @@ class GraphicalEdge(GraphicalElement):
     
     def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
         
+        # using a copy of the camera and the graphics context,generate a line between the source and destination points
+        # then draw the line
+        
+        gc.SetTransform(gc.CreateMatrix(wx.AffineMatrix2D(camera)))
+        gc.SetPen(wx.Pen(wx.BLACK, 3))
+        
+        path = gc.CreatePath()
+        path.MoveToPoint(self.m_sourcePoint)
+        path.AddLineToPoint(self.m_destinationPoint)
+        path.CloseSubpath()
+        gc.StrokePath(path)
+        
+        label_color = wx.BLACK
+        
+        gc.SetFont(wx.NORMAL_FONT, label_color)
+        
+        text_width = 0
+        text_height = 0
+        gc.GetTextExtent(self.m_label, text_width, text_height)
+        
+        gc.DrawText(self.m_label, self.m_sourcePoint.x + (self.m_destinationPoint.x - self.m_sourcePoint.x) / 2 - text_width / 2,
+		self.m_sourcePoint.y + (self.m_destinationPoint.y - self.m_sourcePoint.y) / 2 - text_height)
         pass
     
     def Select(self, camera, clickPosition):

@@ -47,6 +47,7 @@ class Canvas(wx.Panel):
 
         # Selection things
         self.m_selection = Selection()
+        self.m_previous_selection : 'Selection'
         self.m_previousMousePosition : 'wx.Point2D'
         
         # Viewing and transformations
@@ -78,6 +79,7 @@ class Canvas(wx.Panel):
         # Implement the logic to add a graphical node
         
         newObj = NodeFactory.CreateGraphicalNode(node_type, self, center, label)
+        self.m_elements.append(newObj)
         self.m_nodes.append(newObj)
         self.Refresh()
         pass
@@ -120,7 +122,7 @@ class Canvas(wx.Panel):
     
     def GetCameraTransform(self) -> 'wx.AffineMatrix2D':
         
-        cameraTransform = wx.AffineMatrix2D(self.m_cameraZoom)
+        cameraTransform = wx.AffineMatrix2D(self.m_cameraZoom) # scaling
         cameraTransform.Concat(self.m_cameraPan) # translating
         return cameraTransform
     
@@ -133,7 +135,7 @@ class Canvas(wx.Panel):
     
     def Select(self, clickPosition : 'wx.Point2D'):
         
-        if (self.m_elements.__sizeof__() == 0):
+        if (self.m_elements.__len__() == 0):
             selection = Selection()
             return selection
         
@@ -216,18 +218,22 @@ class Canvas(wx.Panel):
         
     def OnPaint(self, event : 'wx.PaintEvent'):
         # Implement the logic to handle the paint event
+        
+        #dc = wx.AutoBufferedPaintDC(self)
         dc = wx.PaintDC(self)
         gc : 'wx.GraphicsContext'
         gc = wx.GraphicsContext.Create(dc)
         
-        if gc:          
+        if gc:
             for node in self.m_nodes:
                 node : 'GraphicalNode'
                 
                 #print(f"Drawing node: {node.m_name}")
                 #print(f"Added node at: {node.m_position.x}, {node.m_position.y}")
                 node.Draw(self.GetCameraTransform(), gc)
-                pass  
+                pass 
+            
+             
             pass       
         pass
     def OnSize(self, event : 'wx.SizeEvent'):
@@ -247,51 +253,195 @@ class Canvas(wx.Panel):
         self.m_selection = self.Select(event.GetPosition())
         self.m_previousMousePosition = wx.Point2D(event.GetPosition())
         
+        # this is a world to local transformation
         self.TransformPoint(self.m_previousMousePosition)
         
-        self.m_debug_status_bar.SetStatusText("Zoom Level: " + str(self.m_zoomLevel), self.DebugField.ZOOM_LEVEL)
+        self.m_debug_status_bar.SetStatusText("Zoom Level: " + str(self.m_zoomLevel), self.DebugField.ZOOM_LEVEL.value)
         self.m_debug_status_bar.SetStatusText("Mouse Position(" + str(self.m_previousMousePosition.x) + ", " 
-                                              + str(self.m_previousMousePosition.y) + ")", self.DebugField.MOUSE_POSITION)
+                                              + str(self.m_previousMousePosition.y) + ")", self.DebugField.MOUSE_POSITION.value)
         
         if self.m_selection.m_state == Selection.State.NODE_INPUT:
             
-            # newEdge = GraphicalEdge(self.m_nextID)
-            # self.m_edges.append(newEdge)
+            # generate a new edge and add it to the list of edges
+            newEdge = GraphicalEdge(self.m_nextID, self.m_selection.m_element, None)
+            self.m_elements.append(newEdge)
+            self.m_edges.append(newEdge)
             
-            # # get most recent incomplete edge
-            # self.incompleteEdge : 'GraphicalEdge'
-            # self.incompleteEdge = self.m_edges.pop()
+            # get the most recent incomplete edge
+            self.incompleteEdge : 'GraphicalEdge'
+            self.incompleteEdge = self.m_edges.pop()
             
-            # self.incompleteEdge : 'GraphicalEdge'
+            # set the destination node of the edge
+            self.incompleteEdge.SetDestination(self.m_selection.m_element)          
             
             print("Selection state node output")
             pass
         elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:
+            # generate a new edge and add it to the list of edges
+            newEdge = GraphicalEdge(self.m_nextID, self.m_selection.m_element, None)
+            self.m_elements.append(newEdge)
+            self.m_edges.append(newEdge)
+            
+            # get the most recent incomplete edge
+            self.incompleteEdge : 'GraphicalEdge'
+            self.incompleteEdge = self.m_edges.pop()
+            
+            # set the source node of the edge
+            self.incompleteEdge.SetSource(self.m_selection.m_element)  
             print("Selection state node output")
             pass
         elif self.m_selection.m_state == Selection.State.NODE:
+            
+            # prepare to drag node
+            # set element as selected 
+            self.m_selection.m_element.SetSelected(True)
+            
             print("Selection state node")
             pass
         elif self.m_selection.m_state == Selection.State.NONE:
+            self.m_isPanning = True
             print("Selection state none")
             pass
         else:
             print("SELECTION STATE ERROR IN OnLeftDown IN THE CANVAS OBJECT")
             pass
         
+        self.m_previous_selection = self.m_selection
+        
         self.Refresh()        
         pass
     def OnLeftUp(self, event : 'wx.MouseEvent'):
-        # Implement the logic to handle the left mouse button up event
+        # Implement the logic to handle the left mouse button up event    
+        
+        # get end selection
+        end_selection = self.Select(event.GetPosition())
+        
+        if self.m_selection.m_state == Selection.State.NODE_INPUT:
+            
+            # check that the user selected an output to pair with the input and then connect
+            if end_selection.m_state == Selection.State.NODE_OUTPUT and end_selection.m_element != self.incompleteEdge.m_destination:
+                self.incompleteEdge.SetSource(end_selection.m_element)
+                
+                # once edge is connected, its no longer incomplete
+                completeEdge = self.incompleteEdge
+                # add the complete edge to the list of edges
+                self.m_edges.append(completeEdge)
+                
+                # for this selection add next and for end selection add previous for connected nodes
+                completeEdge.m_source.AddNext(completeEdge.m_destination)
+                completeEdge.m_destination.AddPrevious(completeEdge.m_source)
+                
+                # set the debug status bar letting the user know which nodes are connected
+                self.m_debug_status_bar.SetStatusText("Connected: " + completeEdge.m_source.m_label + " to " + completeEdge.m_destination.m_label, 
+                                                      self.DebugField.COMPONENTS_CONNECTED.value)
+                pass
+            else:
+                # erase the incomplete edge from the list of edges
+                self.m_edges.pop()
+                pass
+           
+            pass
+        elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:
+            
+            # check that user selected an input to pair with the output and then connect
+            if end_selection.m_state == Selection.State.NODE_INPUT and end_selection.m_element != self.incompleteEdge.m_source:
+                self.incompleteEdge.SetDestination(end_selection.m_element)
+                
+                # once edge is connected, its no longer incomplete
+                completeEdge = self.incompleteEdge
+                # add the complete edge to the list of edges
+                self.m_edges.append(completeEdge)
+                self.m_elements.append(completeEdge)
+                
+                # for this selection add next and for end selection add previous for connected nodes
+                completeEdge.m_source.AddNext(completeEdge.m_destination)
+                completeEdge.m_destination.AddPrevious(completeEdge.m_source)
+                
+                # set the debug status bar letting the user know which nodes are connected
+                self.m_debug_status_bar.SetStatusText("Connected: " + completeEdge.m_source.m_label + " to " + completeEdge.m_destination.m_label, 
+                                                      self.DebugField.COMPONENTS_CONNECTED.value)
+                pass
+            else:
+                # erase the incomplete edge from the list of edges
+                self.m_edges.pop()
+                pass
+            pass
+        elif self.m_selection.m_state == Selection.State.NODE:
+            
+            pass
+        elif self.m_selection.m_state == Selection.State.NONE:
+            # user is no longer panning camera
+            self.m_isPanning = False
+            pass
+        else:
+            print("SELECTION STATE ERROR IN OnLeftUp IN THE CANVAS OBJECT")
+            pass
+        
+        self.m_isScaling = False
+        self.m_selection.Reset()
+        self.m_incompleteEdge = None        
+        
+        self.Refresh()
         pass
     def OnMotion(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the mouse motion event
+        mouse_position = wx.Point2D(event.GetPosition())
+        refresh = False
+        
+        # capture the mouse movement for panning and moving graphical nodes
+        if self.m_isPanning and (event.ButtonDown(wx.MOUSE_BTN_LEFT) or  event.ButtonDown(wx.MOUSE_BTN_MIDDLE)):
+            
+            self.PanCamera(mouse_position)
+            refresh = True 
+            pass
+        elif not self.m_selection:
+            return
+         
+        if self.m_selection.m_state == Selection.State.NODE_INPUT:
+           
+            if event.ButtonDown(wx.MOUSE_BTN_LEFT):
+                self.incompleteEdge.SetSource(self.m_selection.m_element)
+                pass
+            elif self.incompleteEdge:
+                self.incompleteEdge.Disconnect()
+                self.m_edges.pop()
+                self.incompleteEdge = None
+                pass
+            refresh = True
+            pass
+        elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:
+            
+            if event.ButtonDown(wx.MOUSE_BTN_LEFT):
+                self.incompleteEdge.SetDestination(self.m_selection.m_element)
+                pass
+            elif self.incompleteEdge:
+                self.incompleteEdge.Disconnect()
+                self.m_edges.pop()
+                self.incompleteEdge = None                
+                pass         
+            refresh = True   
+            pass
+        elif self.m_selection.m_state == Selection.State.NODE:
+            # if left button is down then move the node
+            if event.ButtonDown(wx.MOUSE_BTN_LEFT):
+                self.MoveNode(mouse_position)
+                pass            
+            refresh = True
+            pass
+        elif self.m_selection.m_state == Selection.State.NONE:
+
+            pass
+        else:
+            print("SELECTION STATE ERROR IN OnLeftUp IN THE CANVAS OBJECT")
+            pass
+         
+        if refresh:
+            self.Refresh()
+            pass         
         pass
     def OnMouseWheel(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the mouse wheel event
-        
         mousePosition = wx.Point2D(event.GetPosition())
-        self.m_previousMousePosition = mousePosition
         
         # determine the zoom scale factor
         scaleFactor = pow((0.1 * event.GetWheelRotation() / event.GetWheelDelta()), 2)
@@ -299,12 +449,14 @@ class Canvas(wx.Panel):
         # transform point into local coords
         self.TransformPoint(mousePosition)
         
-        # adjust the scale and translation of the camera
+        # adjust the scale and translation of the camera for zooming based on the mouse position
         self.m_cameraPan.Translate(-mousePosition.x, -mousePosition.y)
         self.m_cameraZoom.Scale(scaleFactor, scaleFactor)
         self.m_cameraPan.Translate(mousePosition.x, mousePosition.y)
         self.m_zoomLevel = self.m_zoomLevel * scaleFactor
         
+        # update the previous mouse position
+        self.m_previousMousePosition = mousePosition
         self.Refresh()
         pass
     def OnRightUp(self, event : 'wx.MouseEvent'):
