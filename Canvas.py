@@ -2,6 +2,7 @@ import wx
 from enum import Enum
 from Selection import Selection
 from SimProject import NodeFactory
+from GraphicalElement import GraphicalElement
 from GraphicalNode import GraphicalNode, GSource, GServer, GSink
 from SimulationObjects import SimulationObject, Source, Server, Sink
 
@@ -29,6 +30,8 @@ class Canvas(wx.Panel):
         
         self.m_nextID = 0
         self.m_nodes = []
+        self.m_edges = []
+        self.m_elements = [] # all elements including nodes and edges
         
         # Debug status bar used to display node information
         self.m_debug_status_bar = status_bar         
@@ -92,7 +95,6 @@ class Canvas(wx.Panel):
         self.m_cameraPan.Translate(x, y)
         self.m_zoomLevel = self.m_zoomLevel * 1
         self.m_cameraZoom.Scale(self.m_zoomLevel, self.m_zoomLevel)
-        #self.m_cameraPan.Translate(-x, -y)
         
         ### THIS LINE NEEDS TO BE CALLED
         # REASON WHY:
@@ -102,12 +104,12 @@ class Canvas(wx.Panel):
 
         # add a couple of nodes
         sourcePos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
-        sourcePos.x -= 500       
+        sourcePos.x -= 300       
          
         serverPos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)       
         
         sinkPos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
-        sinkPos.x += 500  
+        sinkPos.x += 300  
         
         self.AddNode(SimulationObject.Type.SOURCE, wx.Point2D(sourcePos.x, sourcePos.y))
         self.AddNode(SimulationObject.Type.SERVER, wx.Point2D(serverPos.x, serverPos.y))
@@ -126,6 +128,20 @@ class Canvas(wx.Panel):
         cTransform = self.GetCameraTransform()
         cTransform.Invert()
         cTransform.TransformPoint(pointToTransform)
+        pass
+    
+    def Select(self, clickPosition : 'wx.Point2D'):
+        
+        if (self.m_elements.__sizeof__() == 0):
+            selection = Selection()
+            return selection
+        
+        for element in self.m_elements:
+            element : 'GraphicalElement'
+            if(element.Select(self.GetCameraTransform(), clickPosition)):
+                
+                pass            
+            pass        
         pass
         
     def GetSimObjects(self):
@@ -207,8 +223,6 @@ class Canvas(wx.Panel):
         self.m_zoomLevel = self.m_zoomLevel * scaleFactor
         
         self.Refresh()
-        
-        
         pass
     def OnRightUp(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the middle mouse button down event

@@ -26,7 +26,10 @@ class MainFrame(wx.Frame):
 
         # Create a menu bar
         self.menubar = wx.MenuBar()
+        
+        self.m_status_bar_fields = 4
         self.m_debug_status_bar = wx.StatusBar()
+        self.m_debug_status_bar.SetFieldsCount(self.m_status_bar_fields)
 
         ### CREATE MENUS
         # File menu

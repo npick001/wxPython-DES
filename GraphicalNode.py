@@ -29,6 +29,8 @@ class GraphicalNode(GraphicalElement):
         self.m_previous = []
         self.m_properties = []
         self.m_sizers = []
+        self.m_inputs = []
+        self.m_outputs = []
         
         ## graphical characteristics
         # size
@@ -72,6 +74,30 @@ class GraphicalNode(GraphicalElement):
     
     def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
         ## VIRTUAL FUNCTION FOR CHILDREN TO IMPLEMENT
+        pass
+    
+    def GetInputPoint(self):
+        inputPoint = wx.Point2D(self.m_inputRect.x + self.m_inputRect.width / 2,
+                                self.m_inputRect.y + self.m_inputRect.height / 2)
+        return self.GetTransform().TransformPoint(inputPoint)
+    
+    def GetOutputPoint(self):
+        outputPoint = wx.Point2D(self.m_outputRect.x + self.m_outputRect.width / 2,
+                                 self.m_outputRect.y + self.m_outputRect.height / 2)
+        return self.GetTransform().TransformPoint(outputPoint)
+    
+    def DisconnectInputs(self):
+        for input in self.m_inputs:
+            input : 'GraphicalEdge'
+            input.Disconnect()            
+            pass
+        pass
+    
+    def DisconnectOutputs(self):
+        for output in self.m_outputs:
+            output : 'GraphicalEdge'
+            input.Disconnect()            
+            pass
         pass
     
     def GetProperties(self) -> list['GraphicalEdge']:
