@@ -28,7 +28,7 @@ class MainFrame(wx.Frame):
         self.menubar = wx.MenuBar()
         
         self.m_status_bar_fields = 4
-        self.m_debug_status_bar = wx.StatusBar()
+        self.m_debug_status_bar = self.CreateStatusBar()
         self.m_debug_status_bar.SetFieldsCount(self.m_status_bar_fields)
 
         ### CREATE MENUS
@@ -80,6 +80,8 @@ class MainFrame(wx.Frame):
         self.aui_manager.Update()
         
         ### EVENT BINDING
+        # Basic Panel Events
+        self.Bind(wx.EVT_SIZE, self.OnResize)      
         # File Menu
         self.file_menu.Bind(wx.EVT_MENU, self.OnOpen)
         self.file_menu.Bind(wx.EVT_MENU, self.OnSave)
@@ -104,6 +106,11 @@ class MainFrame(wx.Frame):
         self.stats_menu.Bind(wx.EVT_MENU, self.OnClickAnalyzer)
     
     ### EVENT HANDLING
+    
+    def OnResize(self, event : 'wx.SizeEvent'):
+        self.Refresh()
+        pass
+    
     # Essentially the deconstructor
     def OnExit(self, event):
         self.Close()

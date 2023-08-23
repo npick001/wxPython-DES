@@ -1,13 +1,29 @@
 import wx
 from GraphicalElement import GraphicalElement
-from GraphicalNode import GraphicalNode
+
+# ASSUMES THAT GRAPHICALNODE IS DEFINED FIRST, WHICH IT SHOULD BE
+# IMPORT PRIORITY ALWAYS POPULATES UPWARDS
+# MORE IMPORTANT MODULES WILL IMPORT LESS IMPORTANT TO AVOID
+# CIRCULAR IMPORTS
+#
+# i.e.: 
+# - Graphical Node import GEdge and GElement
+# -- GraphicalElement import Selection
 
 class GraphicalEdge(GraphicalElement):
-    def __init__(self, id, source : 'GraphicalNode', destination : 'GraphicalNode'):
+    
+    # static member variables
+    m_nextID = 1
+    
+    def __init__(self, source=None, destination=None):
         
-        self.m_id = id
-        self.m_source = source
-        self.m_destination = destination
+        self.m_id = GraphicalEdge.m_nextID
+        GraphicalEdge.m_nextID += 1 
+        
+        self.m_label = "GEdge " + str(self.m_id)
+        
+        self.SetSource(source)
+        self.SetSource(destination)
         
         self.m_sourcePoint : 'wx.Point2D'
         self.m_destinationPoint : 'wx.Point2D'
@@ -16,7 +32,7 @@ class GraphicalEdge(GraphicalElement):
         self.m_destinationID = -1        
         pass
     
-    def SetSource(self, source : 'GraphicalNode'):
+    def SetSource(self, source):
         
         if not source:
             return
@@ -32,7 +48,7 @@ class GraphicalEdge(GraphicalElement):
         self.m_destinationPoint = self.m_sourcePoint        
         pass
     
-    def SetDestination(self, destination : 'GraphicalNode'):
+    def SetDestination(self, destination):
         
         if not destination:
             return

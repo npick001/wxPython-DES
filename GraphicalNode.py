@@ -2,6 +2,7 @@ import wx
 import Distributions
 from enum import Enum
 from Entity import Entity
+from Selection import Selection
 from GraphicalEdge import GraphicalEdge
 from GraphicalElement import GraphicalElement
 from SimulationObjects import SimulationObject
@@ -23,6 +24,7 @@ class GraphicalNode(GraphicalElement):
         
         self.m_nodeType = SimulationObject.Type.DEFAULT
         self.m_name = name
+        self.m_label = name        
         self.m_id = GraphicalNode.m_nextID
         GraphicalNode.m_nextID += 1       
         self.m_next = []
@@ -96,10 +98,11 @@ class GraphicalNode(GraphicalElement):
     def DisconnectOutputs(self):
         for output in self.m_outputs:
             output : 'GraphicalEdge'
-            input.Disconnect()            
+            output.Disconnect()            
             pass
         pass
     
+    # WRONG
     def GetProperties(self) -> list['GraphicalEdge']:
         return self.m_properties
     
@@ -118,6 +121,51 @@ class GraphicalNode(GraphicalElement):
         return self.m_next   
     def GetPrevious(self) -> list['GraphicalNode']:
         return self.m_previous  
+    
+    def Select(self, camera : 'wx.AffineMatrix2D', clickPosition : 'wx.GraphicsContext') -> 'Selection':
+        # logic for selection of a graphicalNode
+        
+        windowToLocal = wx.AffineMatrix2D(camera)
+        windowToLocal.Concat(self.GetTransform())
+        windowToLocal.Invert()
+        
+        clickPosition = windowToLocal.TransformPoint(clickPosition)
+        
+        self.m_is_selected = False
+        
+        if self.m_inputRect.Contains(clickPosition):
+            selection = Selection(self, Selection.State.NODE_INPUT)
+            return selection
+        
+        elif self.m_outputRect.Contains(clickPosition):
+            selection = Selection(self, Selection.State.NODE_OUTPUT)
+            return selection
+        
+        elif self.m_bodyShape.Contains(clickPosition):
+            self.m_is_selected = True
+            selection = Selection(self, Selection.State.NODE)
+            return selection
+        
+        else:
+            selection = Selection(None, Selection.State.NONE)
+            return selection
+        
+    def Move(self, displacement : 'wx.Point2D'):
+        
+        self.m_position += displacement
+        
+        for output in self.m_outputs:
+            
+            output : 'GraphicalEdge'
+            output.m_sourcePoint = self.GetOutputPoint()
+            pass
+        
+        for input in self.m_inputs:
+            
+            input : 'GraphicalEdge'
+            input.m_destinationPoint = self.GetInputPoint()
+            pass        
+        pass
     
     
 ### BEGIN INHERITED SIMULATION OBJECTS
@@ -138,7 +186,6 @@ class GSource(GraphicalNode):
     def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
         ## OVERRIDDEN VIRTUAL FUNCTION 
         
-        localToWindow : 'wx.AffineMatrix2D'
         localToWindow = wx.AffineMatrix2D(camera)
         localToWindow.Concat(self.GetTransform())
         
@@ -174,7 +221,6 @@ class GServer(GraphicalNode):
     def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
         ## OVERRIDDEN VIRTUAL FUNCTION 
         
-        localToWindow : 'wx.AffineMatrix2D'
         localToWindow = wx.AffineMatrix2D(camera) 
         localToWindow.Concat(self.GetTransform())
         
@@ -205,7 +251,6 @@ class GSink(GraphicalNode):
     def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
         ## OVERRIDDEN VIRTUAL FUNCTION 
         
-        localToWindow : 'wx.AffineMatrix2D'
         localToWindow = wx.AffineMatrix2D(camera) 
         localToWindow.Concat(self.GetTransform())
         

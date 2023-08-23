@@ -1,18 +1,20 @@
 import wx
-from enum import Enum
+from collections import deque
+from enum import Enum, IntEnum
 from Selection import Selection
 from SimProject import NodeFactory
 from GraphicalElement import GraphicalElement
+from GraphicalEdge import GraphicalEdge
 from GraphicalNode import GraphicalNode, GSource, GServer, GSink
 from SimulationObjects import SimulationObject, Source, Server, Sink
 
 class Canvas(wx.Panel):
-    class DebugField(Enum):
-        SELECTION_STATE = 1
+    class DebugField(IntEnum):
+        SELECTION_STATE = 0
         ZOOM_LEVEL = 2
         MOUSE_POSITION = 3
-        COMPONENT_SELECTED = 4
-        COMPONENTS_CONNECTED = 5
+        COMPONENT_SELECTED = 1
+        COMPONENTS_CONNECTED = 4
         
     class Enums(Enum):
         ID_ADD_NODE = 200
@@ -29,8 +31,8 @@ class Canvas(wx.Panel):
         self.SetBackgroundColour(wx.WHITE)
         
         self.m_nextID = 0
-        self.m_nodes = []
-        self.m_edges = []
+        self.m_nodes = deque()
+        self.m_edges = deque()
         self.m_elements = [] # all elements including nodes and edges
         
         # Debug status bar used to display node information
@@ -124,8 +126,7 @@ class Canvas(wx.Panel):
     
     def TransformPoint(self, pointToTransform : 'wx.Point2D'):
         
-        cTransform = wx.AffineMatrix2D()
-        cTransform = self.GetCameraTransform()
+        cTransform = wx.AffineMatrix2D(self.GetCameraTransform())
         cTransform.Invert()
         cTransform.TransformPoint(pointToTransform)
         pass
@@ -136,14 +137,59 @@ class Canvas(wx.Panel):
             selection = Selection()
             return selection
         
+        selection = Selection()
+        
         for element in self.m_elements:
             element : 'GraphicalElement'
-            if(element.Select(self.GetCameraTransform(), clickPosition)):
-                
-                pass            
+            
+            selection = element.Select(self.GetCameraTransform(), clickPosition)
+            
+            if(selection):
+                break
             pass        
-        pass
         
+        self.m_debug_status_bar : 'wx.StatusBar'
+        self.m_debug_status_bar.SetStatusText("Selection State: " + GraphicalElement.SELECTION_STATE_NAMES[selection.m_state], self.DebugField.SELECTION_STATE.value)
+        
+        if not selection:
+            self.m_debug_status_bar.SetStatusText("No object selected", self.DebugField.COMPONENT_SELECTED.value)
+            return selection
+        
+        self.m_debug_status_bar.SetStatusText("Object Selected: " + selection.m_element.m_label, self.DebugField.COMPONENT_SELECTED.value)
+        return selection
+        
+    def PanCamera(self, clickPosition):
+        
+        dragVector = clickPosition - self.m_previousMousePosition
+        self.m_originPoint.x += dragVector.x
+        self.m_originPoint.y += dragVector.y
+        
+        inv = wx.AffineMatrix2D(self.GetCameraTransform())
+        inv.Invert()
+        dragVector = inv.TransformDistance(dragVector)
+        self.m_cameraPan.Translate(dragVector.x, dragVector.y)
+        
+        self.m_previousMousePosition = clickPosition
+        
+        self.Refresh()      
+        pass
+    
+    def MoveNode(self, clickPosition):
+        
+        dragVector = clickPosition - self.m_previousMousePosition
+        
+        inv = wx.AffineMatrix2D(self.GetCameraTransform())
+        # next line is not tested yet
+        inv.Concat(self.m_nodes[self.m_selection])
+        inv.Invert()
+        dragVector = inv.TransformDistance(dragVector)
+        self.m_cameraPan.Translate(dragVector.x, dragVector.y)
+        
+        self.m_previousMousePosition = clickPosition
+        
+        self.Refresh()
+        pass
+    
     def GetSimObjects(self):
         # Implement the logic to get simulation objects
         pass
@@ -178,9 +224,8 @@ class Canvas(wx.Panel):
             for node in self.m_nodes:
                 node : 'GraphicalNode'
                 
-                print(f"Drawing node: {node.m_name}")
-                print(f"Added node at: {node.m_position.x}, {node.m_position.y}")
-                print(f"Camera Transform: {node.GetTransform()}")
+                #print(f"Drawing node: {node.m_name}")
+                #print(f"Added node at: {node.m_position.x}, {node.m_position.y}")
                 node.Draw(self.GetCameraTransform(), gc)
                 pass  
             pass       
@@ -190,24 +235,62 @@ class Canvas(wx.Panel):
         pass
     def OnMiddleDown(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the middle mouse button down event
+        self.m_isPanning = True
+        self.m_previousMousePosition = wx.Point2D(event.GetPosition())        
         pass
     def OnMiddleUp(self, event : 'wx.MouseEvent'):
-        # Implement the logic to handle the middle mouse button down event
+        # Implement the logic to handle the middle mouse button up event
+        self.m_isPanning = False
         pass   
     def OnLeftDown(self, event : 'wx.MouseEvent'):
-        # Implement the logic to handle the middle mouse button down event
+        # Implement the logic to handle the left mouse button down event
+        self.m_selection = self.Select(event.GetPosition())
+        self.m_previousMousePosition = wx.Point2D(event.GetPosition())
+        
+        self.TransformPoint(self.m_previousMousePosition)
+        
+        self.m_debug_status_bar.SetStatusText("Zoom Level: " + str(self.m_zoomLevel), self.DebugField.ZOOM_LEVEL)
+        self.m_debug_status_bar.SetStatusText("Mouse Position(" + str(self.m_previousMousePosition.x) + ", " 
+                                              + str(self.m_previousMousePosition.y) + ")", self.DebugField.MOUSE_POSITION)
+        
+        if self.m_selection.m_state == Selection.State.NODE_INPUT:
+            
+            # newEdge = GraphicalEdge(self.m_nextID)
+            # self.m_edges.append(newEdge)
+            
+            # # get most recent incomplete edge
+            # self.incompleteEdge : 'GraphicalEdge'
+            # self.incompleteEdge = self.m_edges.pop()
+            
+            # self.incompleteEdge : 'GraphicalEdge'
+            
+            print("Selection state node output")
+            pass
+        elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:
+            print("Selection state node output")
+            pass
+        elif self.m_selection.m_state == Selection.State.NODE:
+            print("Selection state node")
+            pass
+        elif self.m_selection.m_state == Selection.State.NONE:
+            print("Selection state none")
+            pass
+        else:
+            print("SELECTION STATE ERROR IN OnLeftDown IN THE CANVAS OBJECT")
+            pass
+        
+        self.Refresh()        
         pass
     def OnLeftUp(self, event : 'wx.MouseEvent'):
-        # Implement the logic to handle the middle mouse button down event
+        # Implement the logic to handle the left mouse button up event
         pass
     def OnMotion(self, event : 'wx.MouseEvent'):
-        # Implement the logic to handle the middle mouse button down event
+        # Implement the logic to handle the mouse motion event
         pass
     def OnMouseWheel(self, event : 'wx.MouseEvent'):
-        # Implement the logic to handle the middle mouse button down event
+        # Implement the logic to handle the mouse wheel event
         
-        mousePosition : 'wx.Point2D'
-        mousePosition = event.GetPosition()
+        mousePosition = wx.Point2D(event.GetPosition())
         self.m_previousMousePosition = mousePosition
         
         # determine the zoom scale factor

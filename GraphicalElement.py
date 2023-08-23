@@ -1,6 +1,13 @@
 import wx
 
 class GraphicalElement:
+    SELECTION_STATE_NAMES = [
+        "NONE",
+		"NODE",
+		"NODE_OUTPUT",
+		"NODE_INPUT",
+		"NODE_SIZER",
+		"EDGE"]
     
     # static variables
     m_nextID = 1
@@ -16,6 +23,6 @@ class GraphicalElement:
     def __eq__(self, other : 'GraphicalElement') -> bool:
         return (self.m_id == other.m_id)
     
-    def Select(camera : 'wx.AffineMatrix2D', clickPosition : 'wx.GraphicsContext'):
+    def Select(self, camera : 'wx.AffineMatrix2D', clickPosition : 'wx.GraphicsContext'):
         # VIRTUAL FUNCTION TO BE OVERRIDDEN
         pass
