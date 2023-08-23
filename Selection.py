@@ -1,5 +1,5 @@
 from enum import IntEnum
-import GraphicalEdge
+import GraphicalElement
 
 # ASSUMES THAT GRAPHICALEDGE IS DEFINED FIRST, WHICH IT SHOULD BE
 # IMPORT PRIORITY ALWAYS POPULATES UPWARDS
@@ -20,25 +20,16 @@ class Selection:
         EDGE = 5
         STATES_MAX = 6
         
-    def __init__(self, element = None, state : 'Selection.State' = None):
-        
-        if(element == None):
-            self.m_element = GraphicalEdge.GraphicalEdge()
-            pass
-        else:
-            self.m_element = element
-            pass
-        
-        if(state == None):
-            self.m_state = Selection.State.NONE
-            pass
-        else:
-            self.m_state = state
-            pass
+    def __init__(self):
+        self.m_element : 'GraphicalElement' = None
+        self.m_state = Selection.State.NONE
         pass
     
     def __eq__(self, other : 'Selection') -> bool:
         return self.m_element == other.m_element and self.m_state == other.m_state
+    
+    def isOK(self) -> bool:
+        return self.m_element != None
     
     def Reset(self):
         self.m_element = None

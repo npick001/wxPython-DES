@@ -29,6 +29,7 @@ class Canvas(wx.Panel):
         super().__init__(parent)
         
         self.SetBackgroundColour(wx.WHITE)
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         
         self.m_nextID = 0
         self.m_nodes = deque()
@@ -47,7 +48,9 @@ class Canvas(wx.Panel):
 
         # Selection things
         self.m_selection = Selection()
-        self.m_previous_selection : 'Selection'
+        self.m_selectionID = -1
+        self.m_previous_selection = Selection()
+        self.m_previous_selectionID = -1
         self.m_previousMousePosition : 'wx.Point2D'
         
         # Viewing and transformations
@@ -97,7 +100,7 @@ class Canvas(wx.Panel):
         
         self.m_originPoint = wx.Point2D(0, 0)
         self.m_cameraPan.Translate(x, y)
-        self.m_zoomLevel = self.m_zoomLevel * 1
+        self.m_zoomLevel = self.m_zoomLevel * 1.3
         self.m_cameraZoom.Scale(self.m_zoomLevel, self.m_zoomLevel)
         
         ### THIS LINE NEEDS TO BE CALLED
@@ -108,12 +111,12 @@ class Canvas(wx.Panel):
 
         # add a couple of nodes
         sourcePos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
-        sourcePos.x -= 300       
+        sourcePos.x -= self.FromDIP(150)       
          
         serverPos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)       
         
         sinkPos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
-        sinkPos.x += 300  
+        sinkPos.x += self.FromDIP(150)  
         
         self.AddNode(SimulationObject.Type.SOURCE, wx.Point2D(sourcePos.x, sourcePos.y))
         self.AddNode(SimulationObject.Type.SERVER, wx.Point2D(serverPos.x, serverPos.y))
@@ -146,14 +149,14 @@ class Canvas(wx.Panel):
             
             selection = element.Select(self.GetCameraTransform(), clickPosition)
             
-            if(selection):
+            if(selection.isOK()):
                 break
             pass        
         
         self.m_debug_status_bar : 'wx.StatusBar'
         self.m_debug_status_bar.SetStatusText("Selection State: " + GraphicalElement.SELECTION_STATE_NAMES[selection.m_state], self.DebugField.SELECTION_STATE.value)
         
-        if not selection:
+        if not selection.isOK():
             self.m_debug_status_bar.SetStatusText("No object selected", self.DebugField.COMPONENT_SELECTED.value)
             return selection
         
@@ -162,7 +165,7 @@ class Canvas(wx.Panel):
         
     def PanCamera(self, clickPosition):
         
-        dragVector = clickPosition - self.m_previousMousePosition
+        dragVector = wx.Point2D(clickPosition.x - self.m_previousMousePosition.x, clickPosition.y - self.m_previousMousePosition.y)
         self.m_originPoint.x += dragVector.x
         self.m_originPoint.y += dragVector.y
         
@@ -219,20 +222,26 @@ class Canvas(wx.Panel):
     def OnPaint(self, event : 'wx.PaintEvent'):
         # Implement the logic to handle the paint event
         
-        #dc = wx.AutoBufferedPaintDC(self)
-        dc = wx.PaintDC(self)
+        dc = wx.AutoBufferedPaintDC(self)
+        #dc = wx.PaintDC(self)
+        dc.Clear()
         gc : 'wx.GraphicsContext'
         gc = wx.GraphicsContext.Create(dc)
         
         if gc:
+            # draw nodes
             for node in self.m_nodes:
                 node : 'GraphicalNode'
-                
                 #print(f"Drawing node: {node.m_name}")
                 #print(f"Added node at: {node.m_position.x}, {node.m_position.y}")
                 node.Draw(self.GetCameraTransform(), gc)
                 pass 
             
+            # draw edges
+            for edge in self.m_edges:
+                edge : 'GraphicalEdge'
+                edge.Draw(self.GetCameraTransform(), gc)
+                pass
              
             pass       
         pass
@@ -251,10 +260,12 @@ class Canvas(wx.Panel):
     def OnLeftDown(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the left mouse button down event
         self.m_selection = self.Select(event.GetPosition())
+        self.m_selectionID = self.m_selection.m_element.m_id if self.m_selection.isOK() else -1
         self.m_previousMousePosition = wx.Point2D(event.GetPosition())
+        prevMousePos = wx.Point2D(self.m_previousMousePosition)
         
         # this is a world to local transformation
-        self.TransformPoint(self.m_previousMousePosition)
+        self.TransformPoint(prevMousePos)
         
         self.m_debug_status_bar.SetStatusText("Zoom Level: " + str(self.m_zoomLevel), self.DebugField.ZOOM_LEVEL.value)
         self.m_debug_status_bar.SetStatusText("Mouse Position(" + str(self.m_previousMousePosition.x) + ", " 
@@ -295,6 +306,7 @@ class Canvas(wx.Panel):
             # prepare to drag node
             # set element as selected 
             self.m_selection.m_element.SetSelected(True)
+            self.m_previous_selection.m_element.SetSelected(False)
             
             print("Selection state node")
             pass
@@ -371,12 +383,12 @@ class Canvas(wx.Panel):
             pass
         elif self.m_selection.m_state == Selection.State.NONE:
             # user is no longer panning camera
-            self.m_isPanning = False
             pass
         else:
             print("SELECTION STATE ERROR IN OnLeftUp IN THE CANVAS OBJECT")
             pass
         
+        self.m_isPanning = False
         self.m_isScaling = False
         self.m_selection.Reset()
         self.m_incompleteEdge = None        
@@ -388,13 +400,15 @@ class Canvas(wx.Panel):
         mouse_position = wx.Point2D(event.GetPosition())
         refresh = False
         
+        self.TransformPoint(mouse_position)
+        
         # capture the mouse movement for panning and moving graphical nodes
-        if self.m_isPanning and (event.ButtonDown(wx.MOUSE_BTN_LEFT) or  event.ButtonDown(wx.MOUSE_BTN_MIDDLE)):
+        if self.m_isPanning:
             
             self.PanCamera(mouse_position)
             refresh = True 
             pass
-        elif not self.m_selection:
+        elif not self.m_selection.isOK():
             return
          
         if self.m_selection.m_state == Selection.State.NODE_INPUT:

@@ -123,32 +123,38 @@ class GraphicalNode(GraphicalElement):
     def GetPrevious(self) -> list['GraphicalNode']:
         return self.m_previous  
     
-    def Select(self, camera : 'wx.AffineMatrix2D', clickPosition : 'wx.GraphicsContext') -> 'Selection':
+    def Select(self, camera : 'wx.AffineMatrix2D', clickPosition : 'wx.Point2D') -> 'Selection':
         # logic for selection of a graphicalNode
         
         windowToLocal = wx.AffineMatrix2D(camera)
         windowToLocal.Concat(self.GetTransform())
         windowToLocal.Invert()
         
-        clickPosition = windowToLocal.TransformPoint(clickPosition)
+        clickPosition = windowToLocal.TransformPoint(wx.Point2D(clickPosition))
         
         self.m_is_selected = False
         
         if self.m_inputRect.Contains(clickPosition):
-            selection = Selection(self, Selection.State.NODE_INPUT)
+            selection = Selection()
+            selection.m_element = self
+            selection.m_state = Selection.State.NODE_INPUT           
             return selection
         
         elif self.m_outputRect.Contains(clickPosition):
-            selection = Selection(self, Selection.State.NODE_OUTPUT)
+            selection = Selection()
+            selection.m_element = self
+            selection.m_state = Selection.State.NODE_OUTPUT   
             return selection
         
         elif self.m_bodyShape.Contains(clickPosition):
             self.m_is_selected = True
-            selection = Selection(self, Selection.State.NODE)
+            selection = Selection()
+            selection.m_element = self
+            selection.m_state = Selection.State.NODE   
             return selection
         
         else:
-            selection = Selection(None, Selection.State.NONE)
+            selection = Selection()
             return selection
         
     def Move(self, displacement : 'wx.Point2D'):
@@ -196,17 +202,19 @@ class GSource(GraphicalNode):
         # draw the body 
         gc.SetBrush(wx.Brush(self.m_bodyColor))
         if self.m_is_selected:
-            gc.SetPen(wx.Pen(wx.BLUE, 2))
+            gc.SetPen(wx.Pen(wx.BLUE, 3))
             pass
         gc.DrawRoundedRectangle(self.m_bodyShape.x, self.m_bodyShape.y, self.m_bodyShape.width, self.m_bodyShape.height, GraphicalNode.m_cornerRadius)
            
+        gc.SetPen(wx.TRANSPARENT_PEN)
+        
         # draw the output rectangle
         gc.SetBrush(wx.Brush(self.m_ioColor))
         gc.DrawRectangle(self.m_outputRect.x, self.m_outputRect.y, self.m_outputRect.width, self.m_outputRect.height)
         
         #gc.SetFont(wx.NORMAL_FONT, self.m_labelColor)
         #gc.GetFullTextExtent(self.m_name)
-        pass
+        pass    
     pass
 
 class GServer(GraphicalNode):
@@ -233,7 +241,12 @@ class GServer(GraphicalNode):
         
         # draw the body 
         gc.SetBrush(wx.Brush(self.m_bodyColor))
+        if self.m_is_selected:
+            gc.SetPen(wx.Pen(wx.BLUE, 3))
+            pass
         gc.DrawRoundedRectangle(self.m_bodyShape.x, self.m_bodyShape.y, self.m_bodyShape.width, self.m_bodyShape.height, GraphicalNode.m_cornerRadius)
+        
+        gc.SetPen(wx.TRANSPARENT_PEN)
         
         # draw the input rectangle
         gc.SetBrush(wx.Brush(self.m_ioColor))
@@ -263,7 +276,12 @@ class GSink(GraphicalNode):
         
         # draw the body 
         gc.SetBrush(wx.Brush(self.m_bodyColor))
+        if self.m_is_selected:
+            gc.SetPen(wx.Pen(wx.BLUE, 3))
+            pass
         gc.DrawRoundedRectangle(self.m_bodyShape.x, self.m_bodyShape.y, self.m_bodyShape.width, self.m_bodyShape.height, GraphicalNode.m_cornerRadius)
+        
+        gc.SetPen(wx.TRANSPARENT_PEN)
         
         # draw the input rectangle
         gc.SetBrush(wx.Brush(self.m_ioColor))

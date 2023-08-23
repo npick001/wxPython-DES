@@ -21,12 +21,15 @@ class GraphicalElement:
         pass
     
     def __eq__(self, other : 'GraphicalElement') -> bool:
-        return (self.m_id == other.m_id)
+        if(other == None):
+            return False
+        else:
+            return (self.m_id == other.m_id)
     
     def SetSelected(self, selected : bool):
         self.m_is_selected = selected
         pass
     
-    def Select(self, camera : 'wx.AffineMatrix2D', clickPosition : 'wx.GraphicsContext'):
+    def Select(self, camera : 'wx.AffineMatrix2D', clickPosition : 'wx.Point2D'):
         # VIRTUAL FUNCTION TO BE OVERRIDDEN
         pass
