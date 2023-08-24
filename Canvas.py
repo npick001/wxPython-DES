@@ -223,7 +223,6 @@ class Canvas(wx.Panel):
         # Implement the logic to handle the paint event
         
         dc = wx.AutoBufferedPaintDC(self)
-        #dc = wx.PaintDC(self)
         dc.Clear()
         gc : 'wx.GraphicsContext'
         gc = wx.GraphicsContext.Create(dc)
