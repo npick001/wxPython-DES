@@ -71,7 +71,7 @@ class Canvas(wx.Panel):
         self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
         self.Bind(wx.EVT_LEFT_UP, self.OnLeftUp)
         self.Bind(wx.EVT_MOTION, self.OnMotion)
-        self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
+        # self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel) not working yet
         self.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeaveWindow)
         self.Bind(wx.EVT_ENTER_WINDOW, self.OnEnterWindow)
@@ -111,12 +111,12 @@ class Canvas(wx.Panel):
 
         # add a couple of nodes
         sourcePos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
-        sourcePos.x -= self.FromDIP(150)       
+        sourcePos.x -= self.FromDIP(125)       
          
         serverPos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)       
         
         sinkPos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
-        sinkPos.x += self.FromDIP(150)  
+        sinkPos.x += self.FromDIP(125)  
         
         self.AddNode(SimulationObject.Type.SOURCE, wx.Point2D(sourcePos.x, sourcePos.y))
         self.AddNode(SimulationObject.Type.SERVER, wx.Point2D(serverPos.x, serverPos.y))
@@ -125,7 +125,8 @@ class Canvas(wx.Panel):
     
     def GetCameraTransform(self) -> 'wx.AffineMatrix2D':
         
-        cameraTransform = wx.AffineMatrix2D(self.m_cameraZoom) # scaling
+        cameraTransform = wx.AffineMatrix2D()
+        cameraTransform.Concat(self.m_cameraZoom) # scaling
         cameraTransform.Concat(self.m_cameraPan) # translating
         return cameraTransform
     
@@ -166,13 +167,14 @@ class Canvas(wx.Panel):
     def PanCamera(self, clickPosition):
         
         dragVector = wx.Point2D(clickPosition.x - self.m_previousMousePosition.x, clickPosition.y - self.m_previousMousePosition.y)
-        self.m_originPoint.x += dragVector.x
-        self.m_originPoint.y += dragVector.y
+        moveSpeedModifier = 0.4
         
         inv = wx.AffineMatrix2D(self.GetCameraTransform())
         inv.Invert()
         dragVector = inv.TransformDistance(dragVector)
         self.m_cameraPan.Translate(dragVector.x, dragVector.y)
+        #self.m_originPoint.x += dragVector.x 
+        #self.m_originPoint.y += dragVector.y
         
         self.m_previousMousePosition = clickPosition
         
@@ -228,6 +230,69 @@ class Canvas(wx.Panel):
         gc = wx.GraphicsContext.Create(dc)
         
         if gc:
+            
+            # draw where origin is as lines constrained by 10,000 units from the origin
+            windowToLocal = wx.AffineMatrix2D(self.GetCameraTransform())
+            gc.SetTransform(gc.CreateMatrix(windowToLocal))
+            gc.SetPen(wx.Pen(wx.BLACK, 1))
+            
+            allowedDistanceFromOrigin = 1000
+            numGridLines = 20
+            
+            xLineLeft = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
+            xLineLeft.x -= allowedDistanceFromOrigin
+            xLineRight = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
+            xLineRight.x += allowedDistanceFromOrigin
+            xPath = gc.CreatePath()
+            xPath.MoveToPoint(xLineLeft)
+            xPath.AddLineToPoint(xLineRight)
+            
+            yLineTop = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
+            yLineTop.y -= allowedDistanceFromOrigin
+            yLineBottom = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
+            yLineBottom.y += allowedDistanceFromOrigin
+            yPath = gc.CreatePath()
+            yPath.MoveToPoint(yLineTop)
+            yPath.AddLineToPoint(yLineBottom)
+            
+            gc.StrokePath(xPath)
+            gc.StrokePath(yPath)
+            
+            # create bounding box using lines
+            # will actually bind the creation area to this later
+            bb_width = 2 * allowedDistanceFromOrigin
+            bb_height = 2 * allowedDistanceFromOrigin
+            bb_x = xLineLeft.x
+            bb_y = yLineTop.y
+            gc.DrawRectangle(bb_x, bb_y, bb_width, bb_height)
+            
+            # draw the grid lines for x and y axis
+            # x axis
+            for i in range(1, numGridLines):
+                y = yLineTop.y + (i * (bb_height / numGridLines))
+                
+                topPoint = wx.Point2D(xLineLeft.x, y)
+                bottomPoint = wx.Point2D(xLineRight.x, y)  
+                
+                thisLinePath = gc.CreatePath()
+                thisLinePath.MoveToPoint(topPoint)
+                thisLinePath.AddLineToPoint(bottomPoint)
+                gc.StrokePath(thisLinePath)  
+                pass
+            
+            # y axis
+            for i in range(1, numGridLines):
+                x = xLineLeft.x + (i * (bb_width / numGridLines))
+                
+                leftPoint = wx.Point2D(x, yLineTop.y)
+                rightPoint = wx.Point2D(x, yLineBottom.y)       
+                
+                thisLinePath = gc.CreatePath()
+                thisLinePath.MoveToPoint(leftPoint)
+                thisLinePath.AddLineToPoint(rightPoint)
+                gc.StrokePath(thisLinePath)         
+                pass            
+            
             # draw nodes
             for node in self.m_nodes:
                 node : 'GraphicalNode'
@@ -267,8 +332,8 @@ class Canvas(wx.Panel):
         self.TransformPoint(prevMousePos)
         
         self.m_debug_status_bar.SetStatusText("Zoom Level: " + str(self.m_zoomLevel), self.DebugField.ZOOM_LEVEL.value)
-        self.m_debug_status_bar.SetStatusText("Mouse Position(" + str(self.m_previousMousePosition.x) + ", " 
-                                              + str(self.m_previousMousePosition.y) + ")", self.DebugField.MOUSE_POSITION.value)
+        self.m_debug_status_bar.SetStatusText("Mouse Position(" + str(prevMousePos.x) + ", " 
+                                            + str(prevMousePos.y) + ")", self.DebugField.MOUSE_POSITION.value)
         
         if self.m_selection.m_state == Selection.State.NODE_INPUT:
             
@@ -305,7 +370,17 @@ class Canvas(wx.Panel):
             # prepare to drag node
             # set element as selected 
             self.m_selection.m_element.SetSelected(True)
-            self.m_previous_selection.m_element.SetSelected(False)
+            
+            for node in self.m_nodes:
+                node : 'GraphicalNode'
+                if node != self.m_selection.m_element:
+                    node.SetSelected(False)
+                    pass
+                pass
+            
+            if self.m_previous_selection.isOK():
+                self.m_previous_selection.m_element.SetSelected(False)
+                pass
             
             print("Selection state node")
             pass
@@ -457,15 +532,14 @@ class Canvas(wx.Panel):
         mousePosition = wx.Point2D(event.GetPosition())
         
         # determine the zoom scale factor
-        scaleFactor = pow((0.1 * event.GetWheelRotation() / event.GetWheelDelta()), 2)
+        scaleFactor = pow((0.01 * event.GetWheelRotation() / event.GetWheelDelta()), 2)
         
-        # transform point into local coords
-        self.TransformPoint(mousePosition)
+        center = wx.Point2D(self.m_originPoint)
         
         # adjust the scale and translation of the camera for zooming based on the mouse position
-        self.m_cameraPan.Translate(-mousePosition.x, -mousePosition.y)
+        self.m_cameraPan.Translate(center.x, center.y)
         self.m_cameraZoom.Scale(scaleFactor, scaleFactor)
-        self.m_cameraPan.Translate(mousePosition.x, mousePosition.y)
+        self.m_cameraPan.Translate(-center.x, -center.y)
         self.m_zoomLevel = self.m_zoomLevel * scaleFactor
         
         # update the previous mouse position

@@ -37,41 +37,48 @@ class GraphicalNode(GraphicalElement):
         
         ## graphical characteristics
         # size
-        self.m_bodySize = parent.FromDIP(wx.Size(100, 75))
-        self.m_ioSize = parent.FromDIP(wx.Size(15, 15))
-        self.m_sizerSize = parent.FromDIP(wx.Size(6, 6))
+        self.m_bodySize = wx.Size(100, 75)
+        self.m_ioSize = wx.Size(15, 15)
+        self.m_sizerSize = wx.Size(6, 6)
         # color
         self.m_bodyColor = wx.BLACK
         self.m_labelColor = wx.WHITE
         self.m_ioColor = wx.BLUE
         self.m_sizerColor = wx.RED
-        # shape
-        self.m_bodyShape = wx.Rect2D(-self.m_bodySize.GetWidth() / 2, -self.m_bodySize.GetHeight() / 2, self.m_bodySize.GetWidth(), self.m_bodySize.GetHeight())
         # position
-        self.m_position = center
+        self.m_position = wx.Point2D(center)
+        # shape
+        self.m_bodyShape = wx.Rect2D(self.m_position.x - self.m_bodySize.GetWidth() / 2, self.m_position.y - self.m_bodySize.GetHeight() / 2, 
+                                     self.m_bodySize.GetWidth(), self.m_bodySize.GetHeight())
+        
+        ## user rotation node
+        distanceFromNode = self.m_bodyShape.height * 0.75
+        x = self.m_position.x - (self.m_ioSize.GetWidth() / 2)
+        y = self.m_position.y - distanceFromNode - (self.m_bodyShape.height / 2) + self.m_ioSize.GetHeight()
+        self.m_rotator = wx.Rect2D(x, y, self.m_ioSize.GetWidth(), self.m_ioSize.GetHeight())
         
         ## user sizing nodes
         # TOP_LEFT
-        x = self.m_position.x - (self.m_bodyShape.width / 2)
-        y = self.m_position.y - (self.m_bodyShape.height / 2)
-        self.m_sizers.append(wx.Rect2D(x, y, self.m_bodyShape.width, self.m_bodyShape.height))
-        # TOP_RIGHT
-        x = self.m_position.x + (self.m_bodyShape.width / 2) - self.m_sizerSize.GetWidth()
-        y = self.m_position.y - (self.m_bodyShape.height / 2)
-        self.m_sizers.append(wx.Rect2D(x, y, self.m_bodyShape.width, self.m_bodyShape.height))
-        # BOTTOM_LEFT
-        x = self.m_position.x - (self.m_bodyShape.width / 2)
-        y = self.m_position.y + (self.m_bodyShape.height / 2) - self.m_sizerSize.GetHeight()
-        self.m_sizers.append(wx.Rect2D(x, y, self.m_bodyShape.width, self.m_bodyShape.height))    
-        # BOTTOM_RIGHT
-        x = self.m_position.x - (self.m_bodyShape.width / 2) - self.m_sizerSize.GetWidth()
-        y = self.m_position.y - (self.m_bodyShape.height / 2) - self.m_sizerSize.GetHeight()
-        self.m_sizers.append(wx.Rect2D(x, y, self.m_bodyShape.width, self.m_bodyShape.height))
+        # x = self.m_position.x - (self.m_bodyShape.width / 2)
+        # y = self.m_position.y - (self.m_bodyShape.height / 2)
+        # self.m_sizers.append(wx.Rect2D(x, y, self.m_bodyShape.width, self.m_bodyShape.height))
+        # # TOP_RIGHT
+        # x = self.m_position.x + (self.m_bodyShape.width / 2) - self.m_sizerSize.GetWidth()
+        # y = self.m_position.y - (self.m_bodyShape.height / 2)
+        # self.m_sizers.append(wx.Rect2D(x, y, self.m_bodyShape.width, self.m_bodyShape.height))
+        # # BOTTOM_LEFT
+        # x = self.m_position.x - (self.m_bodyShape.width / 2)
+        # y = self.m_position.y + (self.m_bodyShape.height / 2) - self.m_sizerSize.GetHeight()
+        # self.m_sizers.append(wx.Rect2D(x, y, self.m_bodyShape.width, self.m_bodyShape.height))    
+        # # BOTTOM_RIGHT
+        # x = self.m_position.x - (self.m_bodyShape.width / 2) - self.m_sizerSize.GetWidth()
+        # y = self.m_position.y - (self.m_bodyShape.height / 2) - self.m_sizerSize.GetHeight()
+        # self.m_sizers.append(wx.Rect2D(x, y, self.m_bodyShape.width, self.m_bodyShape.height))
         
         ## io nodes
-        self.m_inputRect = wx.Rect2D(-self.m_bodyShape.width / 2 - self.m_ioSize.GetWidth() / 2, -self.m_ioSize.GetHeight() / 2,
+        self.m_inputRect = wx.Rect2D(self.m_position.x - self.m_bodyShape.width / 2 - self.m_ioSize.GetWidth() / 2, - self.m_ioSize.GetHeight() / 2,
                                      self.m_ioSize.GetWidth(), self.m_ioSize.GetHeight())
-        self.m_outputRect = wx.Rect2D(self.m_bodyShape.width / 2 - self.m_ioSize.GetWidth() / 2, -self.m_ioSize.GetHeight() / 2,
+        self.m_outputRect = wx.Rect2D(self.m_position.x + self.m_bodyShape.width / 2 - self.m_ioSize.GetWidth() / 2, - self.m_ioSize.GetHeight() / 2,
                                      self.m_ioSize.GetWidth(), self.m_ioSize.GetHeight())
         pass
     
@@ -212,6 +219,23 @@ class GSource(GraphicalNode):
         gc.SetBrush(wx.Brush(self.m_ioColor))
         gc.DrawRectangle(self.m_outputRect.x, self.m_outputRect.y, self.m_outputRect.width, self.m_outputRect.height)
         
+        if self.m_is_selected:
+            gc.SetPen(wx.Pen(wx.BLACK, 1))
+            
+            rotatorCenter = wx.Point2D(self.m_rotator.x + self.m_rotator.width / 2,
+                                       self.m_position.y + self.m_rotator.y + self.m_rotator.height / 2)
+            
+            # draw path to the top rotator
+            path = gc.CreatePath()
+            path.MoveToPoint(self.m_position.x, self.m_position.y)
+            path.AddLineToPoint(rotatorCenter.x, rotatorCenter.y)
+            gc.DrawPath(path)
+            
+            # draw the rotator
+            gc.SetBrush(wx.Brush(self.m_ioColor))
+            gc.DrawRectangle(self.m_rotator.x, self.m_rotator.y, self.m_rotator.width, self.m_rotator.height)           
+            pass
+        
         #gc.SetFont(wx.NORMAL_FONT, self.m_labelColor)
         #gc.GetFullTextExtent(self.m_name)
         pass    
@@ -254,6 +278,23 @@ class GServer(GraphicalNode):
         
         # draw the output rectangle
         gc.DrawRectangle(self.m_outputRect.x, self.m_outputRect.y, self.m_outputRect.width, self.m_outputRect.height)
+        
+        if self.m_is_selected:
+            gc.SetPen(wx.Pen(wx.BLACK, 1))
+            
+            rotatorCenter = wx.Point2D(self.m_rotator.x + self.m_rotator.width / 2,
+                                       self.m_position.y + self.m_rotator.y + self.m_rotator.height / 2)
+            
+            # draw path to the top rotator
+            path = gc.CreatePath()
+            path.MoveToPoint(self.m_position.x, self.m_position.y)
+            path.AddLineToPoint(rotatorCenter.x, rotatorCenter.y)
+            gc.DrawPath(path)
+            
+            # draw the rotator
+            gc.SetBrush(wx.Brush(self.m_ioColor))
+            gc.DrawRectangle(self.m_rotator.x, self.m_rotator.y, self.m_rotator.width, self.m_rotator.height)           
+            pass
         pass
     pass
 
@@ -286,6 +327,23 @@ class GSink(GraphicalNode):
         # draw the input rectangle
         gc.SetBrush(wx.Brush(self.m_ioColor))
         gc.DrawRectangle(self.m_inputRect.x, self.m_inputRect.y, self.m_inputRect.width, self.m_inputRect.height)
+        
+        if self.m_is_selected:
+            gc.SetPen(wx.Pen(wx.BLACK, 1))
+            
+            rotatorCenter = wx.Point2D(self.m_rotator.x + self.m_rotator.width / 2,
+                                       self.m_position.y + self.m_rotator.y + self.m_rotator.height / 2)
+            
+            # draw path to the top rotator
+            path = gc.CreatePath()
+            path.MoveToPoint(self.m_position.x, self.m_position.y)
+            path.AddLineToPoint(rotatorCenter.x, rotatorCenter.y)
+            gc.DrawPath(path)
+            
+            # draw the rotator
+            gc.SetBrush(wx.Brush(self.m_ioColor))
+            gc.DrawRectangle(self.m_rotator.x, self.m_rotator.y, self.m_rotator.width, self.m_rotator.height)           
+            pass
         pass
     pass    
     
