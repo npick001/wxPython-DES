@@ -1,4 +1,5 @@
 import wx
+import math
 from collections import deque
 from enum import Enum, IntEnum
 from Selection import Selection
@@ -35,6 +36,7 @@ class Canvas(wx.Panel):
         self.m_nodes = deque()
         self.m_edges = deque()
         self.m_elements = [] # all elements including nodes and edges
+        self.m_incompleteEdge : 'GraphicalEdge'
         
         # Debug status bar used to display node information
         self.m_debug_status_bar = status_bar         
@@ -62,21 +64,33 @@ class Canvas(wx.Panel):
         self.m_originPoint = wx.Point2D(0, 0)
         self.m_zoomLevel = 1
         self.m_canvasSize = wx.Size(800, 600)  
+        
+        # Grid things
+        self.m_allowedDistanceFromOrigin = 1000
+        self.m_numGridLines = 20
+        self.m_numSubGridLines = 4
+        self.m_gridLineSpacing = 0
 
         # EVENT HANDLERS
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_SIZE, self.OnSize)
-        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleDown)
-        self.Bind(wx.EVT_MIDDLE_UP, self.OnMiddleUp)
-        self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
-        self.Bind(wx.EVT_LEFT_UP, self.OnLeftUp)
-        self.Bind(wx.EVT_MOTION, self.OnMotion)
+        # ARROW KEYS
+        self.Bind(wx.EVT_KEY_DOWN, self.OnArrowKeyDown)
+        self.Bind(wx.EVT_KEY_UP, self.OnArrowKeyUp)
+        self.Bind(wx.EVT_LEFT_UP, self.OnLeftClickUp)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftClickDown)
+        self.Bind(wx.EVT_RIGHT_UP, self.OnRightClickUp)
+        self.Bind(wx.EVT_MIDDLE_UP, self.OnMiddleClickUp)
+        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleClickDown)
+        self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
+        
         # self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel) not working yet
-        self.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeaveWindow)
         self.Bind(wx.EVT_ENTER_WINDOW, self.OnEnterWindow)
         #self.Bind(wx.EVT_MIDDLE_DOWN, self.OnCharHook)
         #self.Bind(wx.EVT_MIDDLE_DOWN, self.OnDeleteKey)
+        
+
         
     def AddNode(self, node_type : 'SimulationObject.Type', center : 'wx.Point2D', label=None):
         # Implement the logic to add a graphical node
@@ -167,32 +181,26 @@ class Canvas(wx.Panel):
     def PanCamera(self, clickPosition):
         
         dragVector = wx.Point2D(clickPosition.x - self.m_previousMousePosition.x, clickPosition.y - self.m_previousMousePosition.y)
-        moveSpeedModifier = 0.4
         
         inv = wx.AffineMatrix2D(self.GetCameraTransform())
         inv.Invert()
         dragVector = inv.TransformDistance(dragVector)
         self.m_cameraPan.Translate(dragVector.x, dragVector.y)
-        #self.m_originPoint.x += dragVector.x 
-        #self.m_originPoint.y += dragVector.y
         
         self.m_previousMousePosition = clickPosition
         
         self.Refresh()      
         pass
     
-    def MoveNode(self, clickPosition):
+    def MoveNode(self, node : 'GraphicalNode', dragVector : 'wx.Point2D'):     
         
-        dragVector = clickPosition - self.m_previousMousePosition
-        
-        inv = wx.AffineMatrix2D(self.GetCameraTransform())
-        # next line is not tested yet
-        inv.Concat(self.m_nodes[self.m_selection])
-        inv.Invert()
-        dragVector = inv.TransformDistance(dragVector)
-        self.m_cameraPan.Translate(dragVector.x, dragVector.y)
-        
-        self.m_previousMousePosition = clickPosition
+        # print(f"Node position before moving: {node.m_position.x}, {node.m_position.y}")
+        # print(f"X distance: {dragVector.x}")
+        # print(f"Y distance: {dragVector.y}")
+                
+        node.Move(dragVector.x, dragVector.y)
+        #print the node position after moving
+        #print(f"Node position after moving: {node.m_position.x}, {node.m_position.y}")
         
         self.Refresh()
         pass
@@ -236,8 +244,10 @@ class Canvas(wx.Panel):
             gc.SetTransform(gc.CreateMatrix(windowToLocal))
             gc.SetPen(wx.Pen(wx.BLACK, 1))
             
-            allowedDistanceFromOrigin = 1000
-            numGridLines = 20
+            allowedDistanceFromOrigin = self.m_allowedDistanceFromOrigin
+            numGridLines = self.m_numGridLines
+            numSubGridLines = self.m_numSubGridLines
+            self.m_gridLineSpacing = (self.m_allowedDistanceFromOrigin * 2) / (numGridLines * numSubGridLines)
             
             xLineLeft = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
             xLineLeft.x -= allowedDistanceFromOrigin
@@ -255,9 +265,6 @@ class Canvas(wx.Panel):
             yPath.MoveToPoint(yLineTop)
             yPath.AddLineToPoint(yLineBottom)
             
-            gc.StrokePath(xPath)
-            gc.StrokePath(yPath)
-            
             # create bounding box using lines
             # will actually bind the creation area to this later
             bb_width = 2 * allowedDistanceFromOrigin
@@ -265,6 +272,9 @@ class Canvas(wx.Panel):
             bb_x = xLineLeft.x
             bb_y = yLineTop.y
             gc.DrawRectangle(bb_x, bb_y, bb_width, bb_height)
+            
+            # set pen as black with 60% opacity
+            gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 153), 1))
             
             # draw the grid lines for x and y axis
             # x axis
@@ -280,6 +290,21 @@ class Canvas(wx.Panel):
                 gc.StrokePath(thisLinePath)  
                 pass
             
+            gc.SetPen(wx.Pen(wx.LIGHT_GREY, 1))
+            # draw sub grid lines for x axis
+            for i in range(1, numSubGridLines * numGridLines):
+                y = yLineTop.y + (i * (bb_height / (numSubGridLines * numGridLines)))
+                
+                topPoint = wx.Point2D(xLineLeft.x, y)
+                bottomPoint = wx.Point2D(xLineRight.x, y)  
+                
+                thisLinePath = gc.CreatePath()
+                thisLinePath.MoveToPoint(topPoint)
+                thisLinePath.AddLineToPoint(bottomPoint)
+                gc.StrokePath(thisLinePath)  
+                pass
+            
+            gc.SetPen(wx.Pen(wx.Colour(0, 0, 0, 153), 1))
             # y axis
             for i in range(1, numGridLines):
                 x = xLineLeft.x + (i * (bb_width / numGridLines))
@@ -291,8 +316,25 @@ class Canvas(wx.Panel):
                 thisLinePath.MoveToPoint(leftPoint)
                 thisLinePath.AddLineToPoint(rightPoint)
                 gc.StrokePath(thisLinePath)         
-                pass            
+                pass    
             
+            gc.SetPen(wx.Pen(wx.LIGHT_GREY, 1))
+            # draw sub grid lines for y axis
+            for i in range(1, numSubGridLines * numGridLines):
+                x = xLineLeft.x + (i * (bb_width / (numSubGridLines * numGridLines)))
+                
+                leftPoint = wx.Point2D(x, yLineTop.y)
+                rightPoint = wx.Point2D(x, yLineBottom.y)       
+                
+                thisLinePath = gc.CreatePath()
+                thisLinePath.MoveToPoint(leftPoint)
+                thisLinePath.AddLineToPoint(rightPoint)
+                gc.StrokePath(thisLinePath)         
+                pass           
+            
+            gc.SetPen(wx.Pen(wx.BLACK, 1))
+            gc.StrokePath(xPath)
+            gc.StrokePath(yPath)
             # draw nodes
             for node in self.m_nodes:
                 node : 'GraphicalNode'
@@ -306,22 +348,21 @@ class Canvas(wx.Panel):
                 edge : 'GraphicalEdge'
                 edge.Draw(self.GetCameraTransform(), gc)
                 pass
-             
-            pass       
+            pass      
         pass
     def OnSize(self, event : 'wx.SizeEvent'):
         self.Refresh()
         pass
-    def OnMiddleDown(self, event : 'wx.MouseEvent'):
+    def OnMiddleClickDown(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the middle mouse button down event
         self.m_isPanning = True
         self.m_previousMousePosition = wx.Point2D(event.GetPosition())        
         pass
-    def OnMiddleUp(self, event : 'wx.MouseEvent'):
+    def OnMiddleClickUp(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the middle mouse button up event
         self.m_isPanning = False
         pass   
-    def OnLeftDown(self, event : 'wx.MouseEvent'):
+    def OnLeftClickDown(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the left mouse button down event
         self.m_selection = self.Select(event.GetPosition())
         self.m_selectionID = self.m_selection.m_element.m_id if self.m_selection.isOK() else -1
@@ -337,32 +378,20 @@ class Canvas(wx.Panel):
         
         if self.m_selection.m_state == Selection.State.NODE_INPUT:
             
-            # generate a new edge and add it to the list of edges
-            newEdge = GraphicalEdge(self.m_nextID, self.m_selection.m_element, None)
-            self.m_elements.append(newEdge)
-            self.m_edges.append(newEdge)
-            
-            # get the most recent incomplete edge
-            self.incompleteEdge : 'GraphicalEdge'
-            self.incompleteEdge = self.m_edges.pop()
+            self.m_incompleteEdge = GraphicalEdge()
             
             # set the destination node of the edge
-            self.incompleteEdge.SetDestination(self.m_selection.m_element)          
-            
+            self.m_incompleteEdge.SetDestination(self.m_selection.m_element)       
+            self.m_incompleteEdge.m_sourcePoint = prevMousePos   
             print("Selection state node output")
             pass
-        elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:
-            # generate a new edge and add it to the list of edges
-            newEdge = GraphicalEdge(self.m_nextID, self.m_selection.m_element, None)
-            self.m_elements.append(newEdge)
-            self.m_edges.append(newEdge)
-            
-            # get the most recent incomplete edge
-            self.incompleteEdge : 'GraphicalEdge'
-            self.incompleteEdge = self.m_edges.pop()
+        elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:            
+
+            self.m_incompleteEdge = GraphicalEdge()
             
             # set the source node of the edge
-            self.incompleteEdge.SetSource(self.m_selection.m_element)  
+            self.m_incompleteEdge.SetSource(self.m_selection.m_element)  
+            self.m_incompleteEdge.m_destinationPoint = prevMousePos
             print("Selection state node output")
             pass
         elif self.m_selection.m_state == Selection.State.NODE:
@@ -370,16 +399,13 @@ class Canvas(wx.Panel):
             # prepare to drag node
             # set element as selected 
             self.m_selection.m_element.SetSelected(True)
+            self.m_previous_selection = self.m_selection
             
             for node in self.m_nodes:
                 node : 'GraphicalNode'
                 if node != self.m_selection.m_element:
                     node.SetSelected(False)
                     pass
-                pass
-            
-            if self.m_previous_selection.isOK():
-                self.m_previous_selection.m_element.SetSelected(False)
                 pass
             
             print("Selection state node")
@@ -396,7 +422,7 @@ class Canvas(wx.Panel):
         
         self.Refresh()        
         pass
-    def OnLeftUp(self, event : 'wx.MouseEvent'):
+    def OnLeftClickUp(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the left mouse button up event    
         
         # get end selection
@@ -405,11 +431,11 @@ class Canvas(wx.Panel):
         if self.m_selection.m_state == Selection.State.NODE_INPUT:
             
             # check that the user selected an output to pair with the input and then connect
-            if end_selection.m_state == Selection.State.NODE_OUTPUT and end_selection.m_element != self.incompleteEdge.m_destination:
-                self.incompleteEdge.SetSource(end_selection.m_element)
+            if end_selection.m_state == Selection.State.NODE_OUTPUT and end_selection.m_element != self.m_selection.m_element:
+                self.m_incompleteEdge.SetSource(end_selection.m_element)
                 
                 # once edge is connected, its no longer incomplete
-                completeEdge = self.incompleteEdge
+                completeEdge = self.m_incompleteEdge
                 # add the complete edge to the list of edges
                 self.m_edges.append(completeEdge)
                 
@@ -423,18 +449,18 @@ class Canvas(wx.Panel):
                 pass
             else:
                 # erase the incomplete edge from the list of edges
-                self.m_edges.pop()
+                #self.m_edges.pop()
                 pass
            
             pass
         elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:
             
             # check that user selected an input to pair with the output and then connect
-            if end_selection.m_state == Selection.State.NODE_INPUT and end_selection.m_element != self.incompleteEdge.m_source:
-                self.incompleteEdge.SetDestination(end_selection.m_element)
+            if end_selection.m_state == Selection.State.NODE_INPUT and end_selection.m_element != self.m_selection.m_element:
+                self.m_incompleteEdge.SetDestination(end_selection.m_element)
                 
                 # once edge is connected, its no longer incomplete
-                completeEdge = self.incompleteEdge
+                completeEdge = self.m_incompleteEdge
                 # add the complete edge to the list of edges
                 self.m_edges.append(completeEdge)
                 self.m_elements.append(completeEdge)
@@ -449,11 +475,14 @@ class Canvas(wx.Panel):
                 pass
             else:
                 # erase the incomplete edge from the list of edges
-                self.m_edges.pop()
+                #self.m_edges.pop()
                 pass
             pass
         elif self.m_selection.m_state == Selection.State.NODE:
             
+            #dragVector = wx.Point2D(event.GetPosition().x - self.m_previousMousePosition.x, event.GetPosition().y - self.m_previousMousePosition.y)
+            
+            #self.MoveNode(dragVector)
             pass
         elif self.m_selection.m_state == Selection.State.NONE:
             # user is no longer panning camera
@@ -469,7 +498,7 @@ class Canvas(wx.Panel):
         
         self.Refresh()
         pass
-    def OnMotion(self, event : 'wx.MouseEvent'):
+    def OnMouseMotion(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the mouse motion event
         mouse_position = wx.Point2D(event.GetPosition())
         refresh = False
@@ -488,32 +517,42 @@ class Canvas(wx.Panel):
         if self.m_selection.m_state == Selection.State.NODE_INPUT:
            
             if event.ButtonDown(wx.MOUSE_BTN_LEFT):
-                self.incompleteEdge.SetSource(self.m_selection.m_element)
+                self.m_incompleteEdge.m_sourcePoint = self.TransformPoint(wx.Point2D(mouse_position))
                 pass
-            elif self.incompleteEdge:
-                self.incompleteEdge.Disconnect()
-                self.m_edges.pop()
-                self.incompleteEdge = None
+            elif self.m_incompleteEdge != None:
+                self.m_incompleteEdge.Disconnect()
+                self.m_incompleteEdge = None
                 pass
             refresh = True
             pass
         elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:
             
             if event.ButtonDown(wx.MOUSE_BTN_LEFT):
-                self.incompleteEdge.SetDestination(self.m_selection.m_element)
+                self.m_incompleteEdge.m_sourcePoint = self.TransformPoint(wx.Point2D(mouse_position))
                 pass
-            elif self.incompleteEdge:
-                self.incompleteEdge.Disconnect()
-                self.m_edges.pop()
-                self.incompleteEdge = None                
+            elif self.m_incompleteEdge != None:
+                self.m_incompleteEdge.Disconnect()
+                self.m_incompleteEdge = None                
                 pass         
             refresh = True   
             pass
         elif self.m_selection.m_state == Selection.State.NODE:
-            # if left button is down then move the node
-            if event.ButtonDown(wx.MOUSE_BTN_LEFT):
-                self.MoveNode(mouse_position)
-                pass            
+            
+            dragVector = wx.Point2D(mouse_position.x - self.m_previousMousePosition.x, mouse_position.y - self.m_previousMousePosition.y)
+            
+            # Movement is not moving with mouse
+            # need to scale it down
+            dragVector.x *= 0.375
+            dragVector.y *= 0.375
+            
+            # so i could not get the dragvector working for movement just yet
+            # i want to add movement based on the arrow keys
+            # each key press will move the node by a certain number of gridlines
+            # which will be user configurable => LATER
+            self.MoveNode(self.m_selection.m_element, dragVector)
+            
+            self.m_previousMousePosition = mouse_position
+            
             refresh = True
             pass
         elif self.m_selection.m_state == Selection.State.NONE:
@@ -527,6 +566,8 @@ class Canvas(wx.Panel):
             self.Refresh()
             pass         
         pass
+    
+    ## NOT WORKING
     def OnMouseWheel(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the mouse wheel event
         mousePosition = wx.Point2D(event.GetPosition())
@@ -546,19 +587,54 @@ class Canvas(wx.Panel):
         self.m_previousMousePosition = mousePosition
         self.Refresh()
         pass
-    def OnRightUp(self, event : 'wx.MouseEvent'):
-        # Implement the logic to handle the middle mouse button down event
-        pass
-    def OnLeaveWindow(self, event : 'wx.MouseEvent'):
-        # Implement the logic to handle the middle mouse button down event
-        pass
-    def OnEnterWindow(self, event : 'wx.MouseEvent'):
-        # Implement the logic to handle the middle mouse button down event
-        pass
-    def OnCharHook(self, event : 'wx.KeyEvent'):
-        # Implement the logic to handle the middle mouse button down event
-        pass
-    def OnDeleteKey(self, event : 'wx.KeyEvent'):
-        # Implement the logic to handle the middle mouse button down event
+    
+    def OnArrowKeyDown(self, event : 'wx.KeyEvent'):
+        
+        keycode = event.GetKeyCode()
+        
+        if keycode == wx.WXK_UP:
+            print("Up arrow pressed")
+            pass
+        elif keycode == wx.WXK_DOWN:
+            print("Down arrow pressed")
+            pass
+        elif keycode == wx.WXK_LEFT:
+            print("Left arrow pressed")
+            pass
+        elif keycode == wx.WXK_RIGHT:
+            print("Right arrow pressed")
+            pass
+        
+        event.Skip()       
         pass
     
+    def OnArrowKeyUp(self, event : 'wx.KeyEvent'):
+        
+        keycode = event.GetKeyCode()
+        
+        if keycode == wx.WXK_UP:
+            #print("Up arrow released")
+            pass
+        elif keycode == wx.WXK_DOWN:
+            #print("Down arrow released")
+            pass
+        elif keycode == wx.WXK_LEFT:
+            #print("Left arrow released")
+            pass
+        elif keycode == wx.WXK_RIGHT:
+            #print("Right arrow released")
+            pass 
+        
+        event.Skip()       
+        pass
+    
+    def OnRightClickUp(self, event : 'wx.MouseEvent'):
+        pass
+    def OnLeaveWindow(self, event : 'wx.MouseEvent'):
+        pass
+    def OnEnterWindow(self, event : 'wx.MouseEvent'):
+        pass
+    def OnCharHook(self, event : 'wx.KeyEvent'):
+        pass
+    def OnDeleteKey(self, event : 'wx.KeyEvent'):
+        pass

@@ -1,4 +1,5 @@
 import wx
+import GraphicalNode
 from GraphicalElement import GraphicalElement
 
 # ASSUMES THAT GRAPHICALNODE IS DEFINED FIRST, WHICH IT SHOULD BE
@@ -21,20 +22,23 @@ class GraphicalEdge(GraphicalElement):
         GraphicalEdge.m_nextID += 1 
         
         self.m_label = "GEdge " + str(self.m_id)
-        
-        self.SetSource(source)
-        self.SetSource(destination)
-        
-        self.m_sourcePoint : 'wx.Point2D'
-        self.m_destinationPoint : 'wx.Point2D'
+                
+        self.m_source = source
+        self.m_destination = destination
+        self.m_sourcePoint = wx.Point2D(0, 0)
+        self.m_destinationPoint = wx.Point2D(0, 0)
         
         self.m_sourceID = -1
-        self.m_destinationID = -1        
+        self.m_destinationID = -1  
+        
+        self.SetSource(source)
+        self.SetDestination(destination)
         pass
     
-    def SetSource(self, source):
+    def SetSource(self, source : 'GraphicalNode'):
         
-        if not source:
+        if source == None:
+            print("Source is None")
             return
         
         self.m_source = source
@@ -42,7 +46,7 @@ class GraphicalEdge(GraphicalElement):
         self.m_sourcePoint = source.GetOutputPoint()
         self.m_source.m_inputs.append(self)
         
-        if self.m_destination:
+        if self.m_destination != None:
             return
         
         self.m_destinationPoint = self.m_sourcePoint        
@@ -50,7 +54,8 @@ class GraphicalEdge(GraphicalElement):
     
     def SetDestination(self, destination):
         
-        if not destination:
+        if destination == None:
+            print("Destination is None")
             return
         
         self.m_destination = destination
@@ -58,7 +63,7 @@ class GraphicalEdge(GraphicalElement):
         self.m_destinationPoint = destination.GetInputPoint()
         self.m_destination.m_outputs.append(self)
         
-        if self.m_source:
+        if self.m_source != None:
             return
         
         self.m_sourcePoint = self.m_destinationPoint        
@@ -67,12 +72,12 @@ class GraphicalEdge(GraphicalElement):
     def Disconnect(self):
         
         if self.m_source:
-            self.m_source.m_outputs.remove(self)
+            self.m_source.m_outputs.clear()
             self.m_source = None            
             pass
         
         if self.m_destination:
-            self.m_destination.m_inputs.remove(self)
+            self.m_destination.m_inputs.clear()
             self.m_destination = None 
             pass
         pass
@@ -85,6 +90,7 @@ class GraphicalEdge(GraphicalElement):
         gc.SetTransform(gc.CreateMatrix(wx.AffineMatrix2D(camera)))
         gc.SetPen(wx.Pen(wx.BLACK, 3))
         
+        path : 'wx.GraphicsPath'
         path = gc.CreatePath()
         path.MoveToPoint(self.m_sourcePoint)
         path.AddLineToPoint(self.m_destinationPoint)
@@ -95,12 +101,12 @@ class GraphicalEdge(GraphicalElement):
         
         gc.SetFont(wx.NORMAL_FONT, label_color)
         
-        text_width = 0
-        text_height = 0
-        gc.GetTextExtent(self.m_label, text_width, text_height)
+        text_width = 1
+        text_height = 1
+        #gc.GetTextExtent(self.m_label, text_width, text_height)
         
         gc.DrawText(self.m_label, self.m_sourcePoint.x + (self.m_destinationPoint.x - self.m_sourcePoint.x) / 2 - text_width / 2,
-		self.m_sourcePoint.y + (self.m_destinationPoint.y - self.m_sourcePoint.y) / 2 - text_height)
+		            self.m_sourcePoint.y + (self.m_destinationPoint.y - self.m_sourcePoint.y) / 2 - text_height)
         pass
     
     def Select(self, camera, clickPosition):
