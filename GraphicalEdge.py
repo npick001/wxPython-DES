@@ -44,9 +44,9 @@ class GraphicalEdge(GraphicalElement):
         
         self.m_destinationPoint = wx.Point2D(self.m_sourcePoint)    
         
-        print("Source: " + str(self.m_source.m_id) + "\tDestination: " + (str(self.m_destination.m_id) if self.m_destination != None else "None"))
-        print("Source Point: " + str(self.m_sourcePoint.x) + ", " + str(self.m_sourcePoint.y))
-        print("Destination Point: " + str(self.m_destinationPoint.x) + ", " + str(self.m_destinationPoint.y))
+        # print("Source: " + str(self.m_source.m_id) + "\tDestination: " + (str(self.m_destination.m_id) if self.m_destination != None else "None"))
+        # print("Source Point: " + str(self.m_sourcePoint.x) + ", " + str(self.m_sourcePoint.y))
+        # print("Destination Point: " + str(self.m_destinationPoint.x) + ", " + str(self.m_destinationPoint.y))
         pass
     
     def SetDestination(self, destination):
@@ -65,9 +65,9 @@ class GraphicalEdge(GraphicalElement):
         
         self.m_sourcePoint = wx.Point2D(self.m_destinationPoint)        
         
-        print("Source: " + (str(self.m_source.m_id) if self.m_source != None else "None") + " Destination: " + str(self.m_destination.m_id))
-        print("Source Point: " + str(self.m_sourcePoint.x) + ", " + str(self.m_sourcePoint.y))
-        print("Destination Point: " + str(self.m_destinationPoint.x) + ", " + str(self.m_destinationPoint.y))
+        # print("Source: " + (str(self.m_source.m_id) if self.m_source != None else "None") + " Destination: " + str(self.m_destination.m_id))
+        # print("Source Point: " + str(self.m_sourcePoint.x) + ", " + str(self.m_sourcePoint.y))
+        # print("Destination Point: " + str(self.m_destinationPoint.x) + ", " + str(self.m_destinationPoint.y))
         pass
     
     def Disconnect(self):

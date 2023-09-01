@@ -15,7 +15,7 @@ class Canvas(wx.Panel):
         ZOOM_LEVEL = 2
         MOUSE_POSITION = 3
         COMPONENT_SELECTED = 1
-        COMPONENTS_CONNECTED = 4
+        COMPONENTS_CONNECTED = 3
         
     class Enums(Enum):
         ID_ADD_NODE = 200
@@ -42,7 +42,7 @@ class Canvas(wx.Panel):
         
         # Debug status bar used to display node information
         self.m_debug_status_bar = status_bar         
-        self.m_status_bar_fields = 0
+        self.m_status_bar_fields = 5
 
         # Popup menus
         self.m_canvasMenu = wx.Menu()
@@ -385,8 +385,8 @@ class Canvas(wx.Panel):
             # set the destination node of the edge
             self.m_incompleteEdge.SetDestination(self.m_selection.m_element)       
             
-            print("After setting destination point: " + str(self.m_incompleteEdge.m_destinationPoint.x) + ", " + str(self.m_incompleteEdge.m_destinationPoint.y))
-            print("Source point: " + str(self.m_incompleteEdge.m_sourcePoint.x) + ", " + str(self.m_incompleteEdge.m_sourcePoint.y))
+            # print("After setting destination point: " + str(self.m_incompleteEdge.m_destinationPoint.x) + ", " + str(self.m_incompleteEdge.m_destinationPoint.y))
+            # print("Source point: " + str(self.m_incompleteEdge.m_sourcePoint.x) + ", " + str(self.m_incompleteEdge.m_sourcePoint.y))
             
             # add incomplete edge to edges list
             self.m_edges.append(self.m_incompleteEdge)
@@ -400,8 +400,8 @@ class Canvas(wx.Panel):
             # set the source node of the edge
             self.m_incompleteEdge.SetSource(self.m_selection.m_element)  
             
-            print("After setting source point: " + str(self.m_incompleteEdge.m_sourcePoint.x) + ", " + str(self.m_incompleteEdge.m_sourcePoint.y))
-            print("Destination point: " + str(self.m_incompleteEdge.m_destinationPoint.x) + ", " + str(self.m_incompleteEdge.m_destinationPoint.y))
+            # print("After setting source point: " + str(self.m_incompleteEdge.m_sourcePoint.x) + ", " + str(self.m_incompleteEdge.m_sourcePoint.y))
+            # print("Destination point: " + str(self.m_incompleteEdge.m_destinationPoint.x) + ", " + str(self.m_incompleteEdge.m_destinationPoint.y))
             
             # add incomplete edge to edges list
             self.m_edges.append(self.m_incompleteEdge)
@@ -491,8 +491,7 @@ class Canvas(wx.Panel):
                 completeEdge.m_destination.AddPrevious(completeEdge.m_source)
                 
                 # set the debug status bar letting the user know which nodes are connected
-                self.m_debug_status_bar.SetStatusText("Connected: " + completeEdge.m_source.m_label + " to " + completeEdge.m_destination.m_label, 
-                                                      self.DebugField.COMPONENTS_CONNECTED.value)
+                self.m_debug_status_bar.SetStatusText("Connected: " + completeEdge.m_source.m_label + " to " + completeEdge.m_destination.m_label, self.DebugField.COMPONENTS_CONNECTED.value)
                 pass
             else:
                 # erase the incomplete edge from the list of edges
@@ -572,8 +571,8 @@ class Canvas(wx.Panel):
             incompleteEdge.m_destinationPoint.x += dragVector.x
             incompleteEdge.m_destinationPoint.y += dragVector.y
                         
-            print("Source point: " + str(incompleteEdge.m_sourcePoint.x) + ", " + str(incompleteEdge.m_sourcePoint.y))
-            print("Destination point: " + str(incompleteEdge.m_destinationPoint.x) + ", " + str(incompleteEdge.m_destinationPoint.y))            
+            # print("Source point: " + str(incompleteEdge.m_sourcePoint.x) + ", " + str(incompleteEdge.m_sourcePoint.y))
+            # print("Destination point: " + str(incompleteEdge.m_destinationPoint.x) + ", " + str(incompleteEdge.m_destinationPoint.y))            
         
             self.m_edges.append(incompleteEdge)
                     

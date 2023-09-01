@@ -168,6 +168,16 @@ class GraphicalNode(GraphicalElement):
         self.m_position.x += xdistance
         self.m_position.y += ydistance
         
+        self.m_inputRect.x += xdistance
+        self.m_inputRect.y += ydistance
+        
+        self.m_outputRect.x += xdistance
+        self.m_outputRect.y += ydistance
+        
+        self.m_rotator.x += xdistance
+        self.m_rotator.y += ydistance       
+        
+        
         for output in self.m_outputs:
             
             output : 'GraphicalEdge'
