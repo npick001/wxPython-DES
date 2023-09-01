@@ -32,11 +32,13 @@ class Canvas(wx.Panel):
         self.SetBackgroundColour(wx.WHITE)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         
-        self.m_nextID = 0
+        self.m_node_next_ID = 0
+        self.m_edge_next_ID = 0
+        
         self.m_nodes = deque()
         self.m_edges = deque()
         self.m_elements = [] # all elements including nodes and edges
-        self.m_incompleteEdge : 'GraphicalEdge'
+        self.m_incompleteEdge = GraphicalEdge(self.m_edge_next_ID + 1)
         
         # Debug status bar used to display node information
         self.m_debug_status_bar = status_bar         
@@ -53,7 +55,7 @@ class Canvas(wx.Panel):
         self.m_selectionID = -1
         self.m_previous_selection = Selection()
         self.m_previous_selectionID = -1
-        self.m_previousMousePosition : 'wx.Point2D'
+        self.m_previousMousePosition = wx.Point2D(0, 0)
         
         # Viewing and transformations
         self.m_isPanning = False
@@ -89,8 +91,6 @@ class Canvas(wx.Panel):
         self.Bind(wx.EVT_ENTER_WINDOW, self.OnEnterWindow)
         #self.Bind(wx.EVT_MIDDLE_DOWN, self.OnCharHook)
         #self.Bind(wx.EVT_MIDDLE_DOWN, self.OnDeleteKey)
-        
-
         
     def AddNode(self, node_type : 'SimulationObject.Type', center : 'wx.Point2D', label=None):
         # Implement the logic to add a graphical node
@@ -378,20 +378,34 @@ class Canvas(wx.Panel):
         
         if self.m_selection.m_state == Selection.State.NODE_INPUT:
             
-            self.m_incompleteEdge = GraphicalEdge()
+            ## incrementing canvas static variables on addition of INCOMPLETE EDGE
+            ## will need to decrement if we decide to remove the edge
+            self.m_incompleteEdge = GraphicalEdge(self.m_edge_next_ID + 1)
             
             # set the destination node of the edge
             self.m_incompleteEdge.SetDestination(self.m_selection.m_element)       
-            self.m_incompleteEdge.m_sourcePoint = prevMousePos   
+            
+            print("After setting destination point: " + str(self.m_incompleteEdge.m_destinationPoint.x) + ", " + str(self.m_incompleteEdge.m_destinationPoint.y))
+            print("Source point: " + str(self.m_incompleteEdge.m_sourcePoint.x) + ", " + str(self.m_incompleteEdge.m_sourcePoint.y))
+            
+            # add incomplete edge to edges list
+            self.m_edges.append(self.m_incompleteEdge)
+            
             print("Selection state node output")
             pass
         elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:            
 
-            self.m_incompleteEdge = GraphicalEdge()
+            self.m_incompleteEdge = GraphicalEdge(self.m_edge_next_ID + 1)
             
             # set the source node of the edge
             self.m_incompleteEdge.SetSource(self.m_selection.m_element)  
-            self.m_incompleteEdge.m_destinationPoint = prevMousePos
+            
+            print("After setting source point: " + str(self.m_incompleteEdge.m_sourcePoint.x) + ", " + str(self.m_incompleteEdge.m_sourcePoint.y))
+            print("Destination point: " + str(self.m_incompleteEdge.m_destinationPoint.x) + ", " + str(self.m_incompleteEdge.m_destinationPoint.y))
+            
+            # add incomplete edge to edges list
+            self.m_edges.append(self.m_incompleteEdge)
+            
             print("Selection state node output")
             pass
         elif self.m_selection.m_state == Selection.State.NODE:
@@ -432,35 +446,13 @@ class Canvas(wx.Panel):
             
             # check that the user selected an output to pair with the input and then connect
             if end_selection.m_state == Selection.State.NODE_OUTPUT and end_selection.m_element != self.m_selection.m_element:
-                self.m_incompleteEdge.SetSource(end_selection.m_element)
+                
+                incompleteEdge : 'GraphicalEdge'
+                incompleteEdge = self.m_edges.pop()
+                incompleteEdge.SetSource(end_selection.m_element)
                 
                 # once edge is connected, its no longer incomplete
-                completeEdge = self.m_incompleteEdge
-                # add the complete edge to the list of edges
-                self.m_edges.append(completeEdge)
-                
-                # for this selection add next and for end selection add previous for connected nodes
-                completeEdge.m_source.AddNext(completeEdge.m_destination)
-                completeEdge.m_destination.AddPrevious(completeEdge.m_source)
-                
-                # set the debug status bar letting the user know which nodes are connected
-                self.m_debug_status_bar.SetStatusText("Connected: " + completeEdge.m_source.m_label + " to " + completeEdge.m_destination.m_label, 
-                                                      self.DebugField.COMPONENTS_CONNECTED.value)
-                pass
-            else:
-                # erase the incomplete edge from the list of edges
-                #self.m_edges.pop()
-                pass
-           
-            pass
-        elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:
-            
-            # check that user selected an input to pair with the output and then connect
-            if end_selection.m_state == Selection.State.NODE_INPUT and end_selection.m_element != self.m_selection.m_element:
-                self.m_incompleteEdge.SetDestination(end_selection.m_element)
-                
-                # once edge is connected, its no longer incomplete
-                completeEdge = self.m_incompleteEdge
+                completeEdge = incompleteEdge
                 # add the complete edge to the list of edges
                 self.m_edges.append(completeEdge)
                 self.m_elements.append(completeEdge)
@@ -475,7 +467,36 @@ class Canvas(wx.Panel):
                 pass
             else:
                 # erase the incomplete edge from the list of edges
-                #self.m_edges.pop()
+                self.m_edges.pop()
+                pass
+           
+            pass
+        elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:
+            
+            # check that user selected an input to pair with the output and then connect
+            if end_selection.m_state == Selection.State.NODE_INPUT and end_selection.m_element != self.m_selection.m_element:
+                
+                incompleteEdge : 'GraphicalEdge'
+                incompleteEdge = self.m_edges.pop()
+                incompleteEdge.SetDestination(end_selection.m_element)
+                
+                # once edge is connected, its no longer incomplete
+                completeEdge = incompleteEdge
+                # add the complete edge to the list of edges
+                self.m_edges.append(completeEdge)
+                self.m_elements.append(completeEdge)
+                
+                # for this selection add next and for end selection add previous for connected nodes
+                completeEdge.m_source.AddNext(completeEdge.m_destination)
+                completeEdge.m_destination.AddPrevious(completeEdge.m_source)
+                
+                # set the debug status bar letting the user know which nodes are connected
+                self.m_debug_status_bar.SetStatusText("Connected: " + completeEdge.m_source.m_label + " to " + completeEdge.m_destination.m_label, 
+                                                      self.DebugField.COMPONENTS_CONNECTED.value)
+                pass
+            else:
+                # erase the incomplete edge from the list of edges
+                self.m_edges.pop()
                 pass
             pass
         elif self.m_selection.m_state == Selection.State.NODE:
@@ -500,7 +521,9 @@ class Canvas(wx.Panel):
         pass
     def OnMouseMotion(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the mouse motion event
-        mouse_position = wx.Point2D(event.GetPosition())
+        mouse_position = wx.Point2D(event.GetPosition())       
+        dragVector = wx.Point2D(mouse_position.x - self.m_previousMousePosition.x, mouse_position.y - self.m_previousMousePosition.y)
+        
         refresh = False
         
         self.TransformPoint(mouse_position)
@@ -516,29 +539,47 @@ class Canvas(wx.Panel):
          
         if self.m_selection.m_state == Selection.State.NODE_INPUT:
            
-            if event.ButtonDown(wx.MOUSE_BTN_LEFT):
-                self.m_incompleteEdge.m_sourcePoint = self.TransformPoint(wx.Point2D(mouse_position))
-                pass
-            elif self.m_incompleteEdge != None:
-                self.m_incompleteEdge.Disconnect()
-                self.m_incompleteEdge = None
-                pass
+            #dragVector = wx.Point2D(mouse_position.x - self.m_incompleteEdge.m_sourcePoint.x, mouse_position.y - self.m_incompleteEdge.m_sourcePoint.y)
+           
+            # Movement is not moving with mouse
+            # need to scale it down
+            # dragVector.x *= 0.75
+            # dragVector.y *= 0.75
+            
+            # incompleteEdge : 'GraphicalEdge'
+            # incompleteEdge = self.m_edges.pop()
+            # incompleteEdge.m_sourcePoint.x += dragVector.x
+            # incompleteEdge.m_sourcePoint.y += dragVector.y
+            
+            # print("Source point: " + str(incompleteEdge.m_sourcePoint.x) + ", " + str(incompleteEdge.m_sourcePoint.y))
+            # print("Destination point: " + str(incompleteEdge.m_destinationPoint.x) + ", " + str(incompleteEdge.m_destinationPoint.y))            
+
+            # self.m_edges.append(incompleteEdge)
+
             refresh = True
             pass
         elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:
             
-            if event.ButtonDown(wx.MOUSE_BTN_LEFT):
-                self.m_incompleteEdge.m_sourcePoint = self.TransformPoint(wx.Point2D(mouse_position))
-                pass
-            elif self.m_incompleteEdge != None:
-                self.m_incompleteEdge.Disconnect()
-                self.m_incompleteEdge = None                
-                pass         
+            #dragVector = wx.Point2D(mouse_position.x - self.m_incompleteEdge.m_destinationPoint.x, mouse_position.y - self.m_incompleteEdge.m_destinationPoint.y)
+            
+            # Movement is not moving with mouse
+            # need to scale it down
+            dragVector.x *= 0.775
+            dragVector.y *= 0.775
+            
+            incompleteEdge : 'GraphicalEdge'
+            incompleteEdge = self.m_edges.pop()
+            incompleteEdge.m_destinationPoint.x += dragVector.x
+            incompleteEdge.m_destinationPoint.y += dragVector.y
+                        
+            print("Source point: " + str(incompleteEdge.m_sourcePoint.x) + ", " + str(incompleteEdge.m_sourcePoint.y))
+            print("Destination point: " + str(incompleteEdge.m_destinationPoint.x) + ", " + str(incompleteEdge.m_destinationPoint.y))            
+        
+            self.m_edges.append(incompleteEdge)
+                    
             refresh = True   
             pass
         elif self.m_selection.m_state == Selection.State.NODE:
-            
-            dragVector = wx.Point2D(mouse_position.x - self.m_previousMousePosition.x, mouse_position.y - self.m_previousMousePosition.y)
             
             # Movement is not moving with mouse
             # need to scale it down
@@ -549,9 +590,7 @@ class Canvas(wx.Panel):
             # i want to add movement based on the arrow keys
             # each key press will move the node by a certain number of gridlines
             # which will be user configurable => LATER
-            self.MoveNode(self.m_selection.m_element, dragVector)
-            
-            self.m_previousMousePosition = mouse_position
+            self.MoveNode(self.m_selection.m_element, dragVector)            
             
             refresh = True
             pass
@@ -565,6 +604,8 @@ class Canvas(wx.Panel):
         if refresh:
             self.Refresh()
             pass         
+        
+        self.m_previousMousePosition = mouse_position
         pass
     
     ## NOT WORKING
