@@ -37,7 +37,7 @@ class GraphicalEdge(GraphicalElement):
         self.m_source = source
         self.m_sourceID = source.m_id
         self.m_sourcePoint = source.GetOutputPoint()
-        self.m_source.m_inputs.append(self)
+        self.m_source.m_outputs.append(self)
         
         if self.m_destination != None:
             return
@@ -58,7 +58,7 @@ class GraphicalEdge(GraphicalElement):
         self.m_destination = destination
         self.m_destinationID = destination.m_id
         self.m_destinationPoint = destination.GetInputPoint()
-        self.m_destination.m_outputs.append(self)
+        self.m_destination.m_inputs.append(self)
         
         if self.m_source != None:
             return

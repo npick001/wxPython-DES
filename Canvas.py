@@ -2,6 +2,7 @@ import wx
 import math
 from collections import deque
 from enum import Enum, IntEnum
+import Utility
 from Selection import Selection
 from SimProject import NodeFactory
 from GraphicalElement import GraphicalElement
@@ -24,7 +25,8 @@ class Canvas(wx.Panel):
         ID_ADD_SINK = 203
         ID_RENAME_NODE = 204
         ID_DELETE_NODE = 205
-        ID_REMOVE_EDGE = 206
+        ID_ROTATE_NODE = 206
+        ID_REMOVE_EDGE = 207
         
     def __init__(self, parent, status_bar):
         super().__init__(parent)
@@ -39,16 +41,33 @@ class Canvas(wx.Panel):
         self.m_edges = deque()
         self.m_elements = [] # all elements including nodes and edges
         self.m_incompleteEdge = GraphicalEdge(self.m_edge_next_ID + 1)
+        self.m_edge_next_ID = self.m_edge_next_ID + 1
         
         # Debug status bar used to display node information
         self.m_debug_status_bar = status_bar         
         self.m_status_bar_fields = 5
 
-        # Popup menus
-        self.m_canvasMenu = wx.Menu()
-        self.m_nodeMenu = wx.Menu()
-        self.m_nodeSubMenu = wx.Menu()
-        self.m_ioMenu = wx.Menu()
+        ## Popup menus
+        self.m_canvasMenu = wx.Menu("Canvas")
+        self.m_nodeMenu = wx.Menu("Node menu")
+        self.m_nodeSubMenu = wx.Menu("Specific nodes")
+        
+        # node sub menu
+        self.m_nodeSubMenu.Append(self.Enums.ID_ADD_SOURCE.value, "Source", "Add a source node")
+        self.m_nodeSubMenu.Append(self.Enums.ID_ADD_SERVER.value, "Server", "Add a server node")
+        self.m_nodeSubMenu.Append(self.Enums.ID_ADD_SINK.value, "Sink", "Add a sink node")
+        self.m_nodeSubMenu.Bind(wx.EVT_MENU, self.OnAddSource, id=self.Enums.ID_ADD_SOURCE.value)
+        self.m_nodeSubMenu.Bind(wx.EVT_MENU, self.OnAddServer, id=self.Enums.ID_ADD_SERVER.value)
+        self.m_nodeSubMenu.Bind(wx.EVT_MENU, self.OnAddSink, id=self.Enums.ID_ADD_SINK.value)
+        
+        # canvas menu
+        self.m_canvasMenu.Append(wx.ID_ANY, "Add Simulation Object", self.m_nodeSubMenu)
+        
+        # node menu
+        self.m_nodeMenu.Append(self.Enums.ID_RENAME_NODE.value, "Rename", "Rename the selected node")
+        self.m_nodeMenu.Append(self.Enums.ID_DELETE_NODE.value, "Delete", "Delete the selected node")
+        self.m_nodeMenu.Bind(wx.EVT_MENU, self.OnRenameNode, id=self.Enums.ID_RENAME_NODE.value)
+        self.m_nodeMenu.Bind(wx.EVT_MENU, self.OnDeleteNode, id=self.Enums.ID_DELETE_NODE.value)
 
         # Selection things
         self.m_selection = Selection()
@@ -76,26 +95,26 @@ class Canvas(wx.Panel):
         # EVENT HANDLERS
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_SIZE, self.OnSize)
-        # ARROW KEYS
-        self.Bind(wx.EVT_KEY_DOWN, self.OnArrowKeyDown)
-        self.Bind(wx.EVT_KEY_UP, self.OnArrowKeyUp)
         self.Bind(wx.EVT_LEFT_UP, self.OnLeftClickUp)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftClickDown)
         self.Bind(wx.EVT_RIGHT_UP, self.OnRightClickUp)
         self.Bind(wx.EVT_MIDDLE_UP, self.OnMiddleClickUp)
         self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleClickDown)
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
-        
-        # self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel) not working yet
         self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeaveWindow)
         self.Bind(wx.EVT_ENTER_WINDOW, self.OnEnterWindow)
+        
+        # not working yet
+        # self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
+        # self.Bind(wx.EVT_KEY_DOWN, self.OnArrowKeyDown)
+        # self.Bind(wx.EVT_KEY_UP, self.OnArrowKeyUp)
         #self.Bind(wx.EVT_MIDDLE_DOWN, self.OnCharHook)
         #self.Bind(wx.EVT_MIDDLE_DOWN, self.OnDeleteKey)
         
     def AddNode(self, node_type : 'SimulationObject.Type', center : 'wx.Point2D', label=None):
         # Implement the logic to add a graphical node
         
-        newObj = NodeFactory.CreateGraphicalNode(node_type, self, center, label)
+        newObj = NodeFactory.CreateGraphicalNode(node_type, center, label)
         self.m_elements.append(newObj)
         self.m_nodes.append(newObj)
         self.Refresh()
@@ -113,15 +132,22 @@ class Canvas(wx.Panel):
         y = height / 2       
         
         self.m_originPoint = wx.Point2D(0, 0)
+        
+        print("Before translation:")
+        Utility.print_matrix_values(self.GetCameraTransform())
+        
         self.m_cameraPan.Translate(x, y)
-        self.m_zoomLevel = self.m_zoomLevel * 1.3
+        
+        print("After translation:")
+        Utility.print_matrix_values(self.GetCameraTransform())
+        
+        self.m_zoomLevel = self.m_zoomLevel * 1.0
         self.m_cameraZoom.Scale(self.m_zoomLevel, self.m_zoomLevel)
         
-        ### THIS LINE NEEDS TO BE CALLED
-        # REASON WHY:
-        #   - IN PYTHON ALL VARIABLES ARE BY REFERENCE, 
-        #     SO WHEN FN IS CALLED ON POINT THE VARIABLE DATA ITSELF IS CHANGED. 
-        self.TransformPoint(self.m_originPoint)
+        print("After scaling:")
+        Utility.print_matrix_values(self.GetCameraTransform())
+        
+        self.m_originPoint = self.TransformPoint(self.m_originPoint)
 
         # add a couple of nodes
         sourcePos = wx.Point2D(self.m_originPoint.x, self.m_originPoint.y)
@@ -146,10 +172,20 @@ class Canvas(wx.Panel):
     
     def TransformPoint(self, pointToTransform : 'wx.Point2D'):
         
+        pointToReturn = wx.Point2D(pointToTransform)
+        
+        print("Before transformation:")
+        Utility.print_point(pointToReturn)
+        
         cTransform = wx.AffineMatrix2D(self.GetCameraTransform())
         cTransform.Invert()
-        cTransform.TransformPoint(pointToTransform)
-        pass
+        cTransform.TransformPoint(pointToReturn)
+        
+        print("After transformation:")
+        Utility.print_point(pointToReturn)
+        Utility.print_matrix_values(cTransform)
+
+        return pointToReturn
     
     def Select(self, clickPosition : 'wx.Point2D'):
         
@@ -162,6 +198,7 @@ class Canvas(wx.Panel):
         for element in self.m_elements:
             element : 'GraphicalElement'
             
+            selection : 'Selection'	
             selection = element.Select(self.GetCameraTransform(), clickPosition)
             
             if(selection.isOK()):
@@ -381,6 +418,7 @@ class Canvas(wx.Panel):
             ## incrementing canvas static variables on addition of INCOMPLETE EDGE
             ## will need to decrement if we decide to remove the edge
             self.m_incompleteEdge = GraphicalEdge(self.m_edge_next_ID + 1)
+            self.m_edge_next_ID = self.m_edge_next_ID + 1
             
             # set the destination node of the edge
             self.m_incompleteEdge.SetDestination(self.m_selection.m_element)       
@@ -396,6 +434,7 @@ class Canvas(wx.Panel):
         elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:            
 
             self.m_incompleteEdge = GraphicalEdge(self.m_edge_next_ID + 1)
+            self.m_edge_next_ID = self.m_edge_next_ID + 1
             
             # set the source node of the edge
             self.m_incompleteEdge.SetSource(self.m_selection.m_element)  
@@ -499,13 +538,11 @@ class Canvas(wx.Panel):
                 pass
             pass
         elif self.m_selection.m_state == Selection.State.NODE:
-            
-            #dragVector = wx.Point2D(event.GetPosition().x - self.m_previousMousePosition.x, event.GetPosition().y - self.m_previousMousePosition.y)
-            
-            #self.MoveNode(dragVector)
+            #self.m_edge_next_ID = self.m_edge_next_ID - 1
             pass
         elif self.m_selection.m_state == Selection.State.NONE:
             # user is no longer panning camera
+            #self.m_edge_next_ID = self.m_edge_next_ID - 1
             pass
         else:
             print("SELECTION STATE ERROR IN OnLeftUp IN THE CANVAS OBJECT")
@@ -514,22 +551,18 @@ class Canvas(wx.Panel):
         self.m_isPanning = False
         self.m_isScaling = False
         self.m_selection.Reset()
-        self.m_incompleteEdge = None        
+        self.m_incompleteEdge = None
         
         self.Refresh()
         pass
     def OnMouseMotion(self, event : 'wx.MouseEvent'):
-        # Implement the logic to handle the mouse motion event
-        mouse_position = wx.Point2D(event.GetPosition())       
-        dragVector = wx.Point2D(mouse_position.x - self.m_previousMousePosition.x, mouse_position.y - self.m_previousMousePosition.y)
-        
+        # Implement the logic to handle the mouse motion event        
         refresh = False
-        
-        self.TransformPoint(mouse_position)
-        
+                
         # capture the mouse movement for panning and moving graphical nodes
         if self.m_isPanning:
-            
+            mouse_position = wx.Point2D(event.GetPosition())      
+            self.TransformPoint(mouse_position)
             self.PanCamera(mouse_position)
             refresh = True 
             pass
@@ -539,32 +572,36 @@ class Canvas(wx.Panel):
         if self.m_selection.m_state == Selection.State.NODE_INPUT:
            
             #dragVector = wx.Point2D(mouse_position.x - self.m_incompleteEdge.m_sourcePoint.x, mouse_position.y - self.m_incompleteEdge.m_sourcePoint.y)
-           
+            mouse_position = wx.Point2D(event.GetPosition())       
+            dragVector = wx.Point2D(mouse_position.x - self.m_previousMousePosition.x, mouse_position.y - self.m_previousMousePosition.y)
+        
             # Movement is not moving with mouse
             # need to scale it down
-            # dragVector.x *= 0.75
-            # dragVector.y *= 0.75
+            dragVector.x /= self.m_zoomLevel
+            dragVector.y /= self.m_zoomLevel
             
-            # incompleteEdge : 'GraphicalEdge'
-            # incompleteEdge = self.m_edges.pop()
-            # incompleteEdge.m_sourcePoint.x += dragVector.x
-            # incompleteEdge.m_sourcePoint.y += dragVector.y
+            incompleteEdge : 'GraphicalEdge'
+            incompleteEdge = self.m_edges.pop()
+            incompleteEdge.m_sourcePoint.x += dragVector.x
+            incompleteEdge.m_sourcePoint.y += dragVector.y
             
             # print("Source point: " + str(incompleteEdge.m_sourcePoint.x) + ", " + str(incompleteEdge.m_sourcePoint.y))
             # print("Destination point: " + str(incompleteEdge.m_destinationPoint.x) + ", " + str(incompleteEdge.m_destinationPoint.y))            
 
-            # self.m_edges.append(incompleteEdge)
+            self.m_edges.append(incompleteEdge)
 
             refresh = True
             pass
         elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:
             
             #dragVector = wx.Point2D(mouse_position.x - self.m_incompleteEdge.m_destinationPoint.x, mouse_position.y - self.m_incompleteEdge.m_destinationPoint.y)
-            
+            mouse_position = wx.Point2D(event.GetPosition())       
+            dragVector = wx.Point2D(mouse_position.x - self.m_previousMousePosition.x, mouse_position.y - self.m_previousMousePosition.y)
+        
             # Movement is not moving with mouse
             # need to scale it down
-            dragVector.x *= 0.775
-            dragVector.y *= 0.775
+            dragVector.x /= self.m_zoomLevel
+            dragVector.y /= self.m_zoomLevel
             
             incompleteEdge : 'GraphicalEdge'
             incompleteEdge = self.m_edges.pop()
@@ -579,16 +616,14 @@ class Canvas(wx.Panel):
             refresh = True   
             pass
         elif self.m_selection.m_state == Selection.State.NODE:
-            
+            mouse_position = wx.Point2D(event.GetPosition())       
+            dragVector = wx.Point2D(mouse_position.x - self.m_previousMousePosition.x, mouse_position.y - self.m_previousMousePosition.y)
+        
             # Movement is not moving with mouse
             # need to scale it down
-            dragVector.x *= 0.375
-            dragVector.y *= 0.375
+            dragVector.x /= self.m_zoomLevel * 2
+            dragVector.y /= self.m_zoomLevel * 2
             
-            # so i could not get the dragvector working for movement just yet
-            # i want to add movement based on the arrow keys
-            # each key press will move the node by a certain number of gridlines
-            # which will be user configurable => LATER
             self.MoveNode(self.m_selection.m_element, dragVector)            
             
             refresh = True
@@ -669,6 +704,31 @@ class Canvas(wx.Panel):
         pass
     
     def OnRightClickUp(self, event : 'wx.MouseEvent'):
+        
+        selection = self.Select(event.GetPosition())
+        self.m_previousMousePosition = wx.Point2D(event.GetPosition())
+
+        if(selection.isOK()):
+            self.m_selection = selection
+            self.m_selectionID = self.m_selection.m_element.m_id
+            pass
+        
+        if selection.m_state == Selection.State.NODE:
+            self.m_nodeMenu.SetTitle(selection.m_element.m_label)
+            self.PopupMenu(self.m_nodeMenu)
+            
+            # after popping up the menu, deselect the node for movement
+            self.m_selection.m_element.SetSelected(False)
+            pass
+        elif selection.m_state == Selection.State.NODE_INPUT:
+            pass
+        elif selection.m_state == Selection.State.NODE_OUTPUT:
+            pass     
+        elif selection.m_state == Selection.State.NONE:
+            self.PopupMenu(self.m_canvasMenu)
+            pass
+        
+          
         pass
     def OnLeaveWindow(self, event : 'wx.MouseEvent'):
         pass
@@ -677,4 +737,32 @@ class Canvas(wx.Panel):
     def OnCharHook(self, event : 'wx.KeyEvent'):
         pass
     def OnDeleteKey(self, event : 'wx.KeyEvent'):
+        pass
+    
+    def OnAddSource(self, event : 'wx.CommandEvent'):
+        # Implement the logic to add a source node
+        #center = self.TransformPoint(self.m_previousMousePosition)
+        
+        center = self.TransformPoint(self.m_previousMousePosition) 
+        
+        self.AddNode(SimulationObject.Type.SOURCE, center, "Source")
+        event.Skip()
+        pass
+    def OnAddServer(self, event : 'wx.CommandEvent'):
+        # Implement the logic to add a server node
+        self.AddNode(SimulationObject.Type.SERVER, wx.Point2D(self.m_previousMousePosition), "Server")
+        event.Skip()
+        pass
+    def OnAddSink(self, event : 'wx.CommandEvent'):
+        # Implement the logic to add a sink node
+        self.AddNode(SimulationObject.Type.SINK, self.TransformPoint(wx.Point2D(self.m_previousMousePosition)), "Sink")
+        event.Skip()
+        pass
+    def OnRenameNode(self, event : 'wx.CommandEvent'):
+        # Implement the logic to rename a node
+        event.Skip()
+        pass
+    def OnDeleteNode(self, event : 'wx.CommandEvent'):
+        # Implement the logic to delete a node
+        event.Skip()
         pass

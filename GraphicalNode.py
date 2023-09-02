@@ -20,7 +20,7 @@ class GraphicalNode(GraphicalElement):
     m_nextID = 1
     m_cornerRadius = 10
     
-    def __init__(self, name, parent : 'wx.Panel', center : 'wx.Point2D'):
+    def __init__(self, name, center : 'wx.Point2D'):
         
         self.m_nodeType = SimulationObject.Type.DEFAULT
         self.m_name = name
@@ -46,7 +46,7 @@ class GraphicalNode(GraphicalElement):
         self.m_ioColor = wx.BLUE
         self.m_sizerColor = wx.RED
         # position
-        self.m_position = wx.Point2D(center)
+        self.m_position = wx.Point2D(center.x, center.y)
         # shape
         self.m_bodyShape = wx.Rect2D(self.m_position.x - self.m_bodySize.GetWidth() / 2, self.m_position.y - self.m_bodySize.GetHeight() / 2, 
                                      self.m_bodySize.GetWidth(), self.m_bodySize.GetHeight())
@@ -80,6 +80,9 @@ class GraphicalNode(GraphicalElement):
                                      self.m_ioSize.GetWidth(), self.m_ioSize.GetHeight())
         self.m_outputRect = wx.Rect2D(self.m_position.x + self.m_bodyShape.width / 2 - self.m_ioSize.GetWidth() / 2, - self.m_ioSize.GetHeight() / 2,
                                      self.m_ioSize.GetWidth(), self.m_ioSize.GetHeight())
+        
+        self.m_inputPoint = self.GetTransform().TransformPoint(wx.Point2D(self.m_inputRect.x + self.m_inputRect.width / 2, self.m_inputRect.y + self.m_inputRect.height / 2))
+        self.m_outputPoint = self.GetTransform().TransformPoint(wx.Point2D(self.m_outputRect.x + self.m_outputRect.width / 2, self.m_outputRect.y + self.m_outputRect.height / 2))
         pass
     
     def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
@@ -87,14 +90,10 @@ class GraphicalNode(GraphicalElement):
         pass
     
     def GetInputPoint(self):
-        inputPoint = wx.Point2D(self.m_inputRect.x + self.m_inputRect.width / 2,
-                                self.m_inputRect.y + self.m_inputRect.height / 2)
-        return self.GetTransform().TransformPoint(inputPoint)
+        return self.m_inputPoint
     
     def GetOutputPoint(self):
-        outputPoint = wx.Point2D(self.m_outputRect.x + self.m_outputRect.width / 2,
-                                 self.m_outputRect.y + self.m_outputRect.height / 2)
-        return self.GetTransform().TransformPoint(outputPoint)
+        return self.m_outputPoint
     
     def DisconnectInputs(self):
         for input in self.m_inputs:
@@ -109,10 +108,6 @@ class GraphicalNode(GraphicalElement):
             output.Disconnect()            
             pass
         pass
-    
-    # WRONG
-    def GetProperties(self) -> list['GraphicalEdge']:
-        return self.m_properties
     
     def GetTransform(self):
         transform = wx.AffineMatrix2D()
@@ -170,24 +165,31 @@ class GraphicalNode(GraphicalElement):
         
         self.m_inputRect.x += xdistance
         self.m_inputRect.y += ydistance
+        # self.m_inputPoint.x = self.m_inputRect.x + self.m_inputRect.width / 2
+        # self.m_inputPoint.y = self.m_inputRect.y + self.m_inputRect.height / 2
         
         self.m_outputRect.x += xdistance
         self.m_outputRect.y += ydistance
+        # self.m_outputPoint.x = self.m_outputRect.x + self.m_outputRect.width / 2
+        # self.m_outputPoint.y = self.m_outputRect.y + self.m_outputRect.height / 2
         
         self.m_rotator.x += xdistance
         self.m_rotator.y += ydistance       
         
-        
         for output in self.m_outputs:
             
             output : 'GraphicalEdge'
-            output.m_sourcePoint = self.GetOutputPoint()
+            # output.m_sourcePoint = self.GetOutputPoint()
+            output.m_sourcePoint.x = self.m_outputPoint.x
+            output.m_sourcePoint.y = self.m_outputPoint.y
             pass
         
         for input in self.m_inputs:
             
             input : 'GraphicalEdge'
-            input.m_destinationPoint = self.GetInputPoint()
+            # input.m_destinationPoint = self.GetInputPoint()
+            input.m_destinationPoint.x = self.m_inputPoint.x
+            input.m_destinationPoint.y = self.m_inputPoint.y
             pass        
         pass
     
@@ -196,8 +198,8 @@ class GraphicalNode(GraphicalElement):
 class GSource(GraphicalNode):   
     m_entity = Entity
      
-    def __init__(self, name, parent, center):
-        super().__init__(name, parent, center)
+    def __init__(self, name, center):
+        super().__init__(name, center)
         
         self.m_type = SimulationObject.Type.SOURCE
         
@@ -232,6 +234,9 @@ class GSource(GraphicalNode):
 
         self.m_outputRect.x = self.m_position.x + self.m_bodyShape.width / 2 - self.m_ioSize.GetWidth() / 2
         self.m_outputRect.y = self.m_position.y -self.m_ioSize.GetHeight() / 2
+        
+        #self.m_inputPoint = self.GetTransform().TransformPoint(wx.Point2D(self.m_inputRect.x + self.m_inputRect.width / 2, self.m_inputRect.y + self.m_inputRect.height / 2))
+        self.m_outputPoint = self.GetTransform().TransformPoint(wx.Point2D(self.m_outputRect.x + self.m_outputRect.width / 2, self.m_outputRect.y + self.m_outputRect.height / 2))
         
         # draw body
         gc.DrawRoundedRectangle(self.m_bodyShape.x, self.m_bodyShape.y, self.m_bodyShape.width, self.m_bodyShape.height, GraphicalNode.m_cornerRadius)
@@ -273,8 +278,8 @@ class GServer(GraphicalNode):
         BUSY = 0
         IDLE = 1
     
-    def __init__(self, name, parent, center):
-        super().__init__(name, parent, center) 
+    def __init__(self, name, center):
+        super().__init__(name, center) 
         
         self.m_type = SimulationObject.Type.SERVER  
         self.m_state = self.State.IDLE
@@ -345,8 +350,8 @@ class GServer(GraphicalNode):
 
 class GSink(GraphicalNode):
     
-    def __init__(self, name, parent, center):
-        super().__init__(name, parent, center) 
+    def __init__(self, name, center):
+        super().__init__(name, center) 
         
         self.m_type = SimulationObject.Type.SINK              
         pass 

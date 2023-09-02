@@ -18,18 +18,18 @@ class NodeFactory:
         pass
     
     @classmethod
-    def CreateGraphicalNode(cls, type : 'SimulationObject.Type', parent,  center : 'wx.Point2D', label=None) -> 'SimulationObject':
+    def CreateGraphicalNode(cls, type : 'SimulationObject.Type',  center : 'wx.Point2D', label="SimulationObject") -> 'SimulationObject':
         
         if(type == SimulationObject.Type.SOURCE):
-            source = GSource("Source", parent, center)            
+            source = GSource(label, center)            
             return source
         
         elif(type == SimulationObject.Type.SERVER):
-            server = GServer("Server", parent, center)
+            server = GServer(label, center)
             return server
         
         elif(type == SimulationObject.Type.SINK):
-            sink = GSink("Sink", parent, center)
+            sink = GSink(label, center)
             return sink
         
         else:

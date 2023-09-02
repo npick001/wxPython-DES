@@ -1,5 +1,5 @@
 from enum import IntEnum
-import GraphicalElement
+from GraphicalElement import GraphicalElement
 
 # ASSUMES THAT GRAPHICALEDGE IS DEFINED FIRST, WHICH IT SHOULD BE
 # IMPORT PRIORITY ALWAYS POPULATES UPWARDS
