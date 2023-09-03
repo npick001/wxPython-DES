@@ -1,5 +1,6 @@
 import wx
 from GraphicalElement import GraphicalElement
+from Selection import Selection
 
 # ASSUMES THAT GRAPHICALNODE IS DEFINED FIRST, WHICH IT SHOULD BE
 # IMPORT PRIORITY ALWAYS POPULATES UPWARDS
@@ -31,7 +32,7 @@ class GraphicalEdge(GraphicalElement):
     def SetSource(self, source):
         
         if source == None:
-            print("Source is None")
+            #print("Source is None")
             return
         
         self.m_source = source
@@ -52,7 +53,7 @@ class GraphicalEdge(GraphicalElement):
     def SetDestination(self, destination):
         
         if destination == None:
-            print("Destination is None")
+            #print("Destination is None")
             return
         
         self.m_destination = destination
@@ -111,5 +112,5 @@ class GraphicalEdge(GraphicalElement):
         pass
     
     def Select(self, camera, clickPosition):
-        
-        pass
+        selection = Selection()
+        return selection

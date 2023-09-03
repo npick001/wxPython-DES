@@ -75,13 +75,15 @@ class Canvas(wx.Panel):
         self.m_previous_selection = Selection()
         self.m_previous_selectionID = -1
         self.m_previousMousePosition = wx.Point2D(0, 0)
+        self.m_rotationStartPoint = wx.Point2D(0, 0)
         
         # Viewing and transformations
         self.m_isPanning = False
         self.m_isScaling = False
+        self.m_isRenaming = False
         self.m_cameraPan = wx.AffineMatrix2D()
         self.m_cameraZoom = wx.AffineMatrix2D()
-        self.m_originTransformation = wx.AffineMatrix2D()
+        self.m_originTransformation = wx.Point2D(0, 0)
         self.m_originPoint = wx.Point2D(0, 0)
         self.m_zoomLevel = 1
         self.m_canvasSize = wx.Size(800, 600)  
@@ -133,19 +135,21 @@ class Canvas(wx.Panel):
         
         self.m_originPoint = wx.Point2D(0, 0)
         
-        print("Before translation:")
-        Utility.print_matrix_values(self.GetCameraTransform())
+        #print("Before translation:")
+        #Utility.print_matrix_values(self.GetCameraTransform())
         
         self.m_cameraPan.Translate(x, y)
+        self.m_originTransformation.x += x
+        self.m_originTransformation.y += y
         
-        print("After translation:")
-        Utility.print_matrix_values(self.GetCameraTransform())
+        #print("After translation:")
+        #Utility.print_matrix_values(self.GetCameraTransform())
         
         self.m_zoomLevel = self.m_zoomLevel * 1.0
         self.m_cameraZoom.Scale(self.m_zoomLevel, self.m_zoomLevel)
         
-        print("After scaling:")
-        Utility.print_matrix_values(self.GetCameraTransform())
+        #print("After scaling:")
+        #Utility.print_matrix_values(self.GetCameraTransform())
         
         self.m_originPoint = self.TransformPoint(self.m_originPoint)
 
@@ -174,16 +178,16 @@ class Canvas(wx.Panel):
         
         pointToReturn = wx.Point2D(pointToTransform)
         
-        print("Before transformation:")
-        Utility.print_point(pointToReturn)
+        #print("Before transformation:")
+        #Utility.print_point(pointToReturn)
         
         cTransform = wx.AffineMatrix2D(self.GetCameraTransform())
         cTransform.Invert()
         cTransform.TransformPoint(pointToReturn)
         
-        print("After transformation:")
-        Utility.print_point(pointToReturn)
-        Utility.print_matrix_values(cTransform)
+        #print("After transformation:")
+        #Utility.print_point(pointToReturn)
+        #Utility.print_matrix_values(cTransform)
 
         return pointToReturn
     
@@ -193,22 +197,22 @@ class Canvas(wx.Panel):
             selection = Selection()
             return selection
         
+        selection : 'Selection'	
         selection = Selection()
         
         for element in self.m_elements:
             element : 'GraphicalElement'
             
-            selection : 'Selection'	
             selection = element.Select(self.GetCameraTransform(), clickPosition)
             
-            if(selection.isOK()):
+            if(selection):
                 break
-            pass        
+            pass
         
         self.m_debug_status_bar : 'wx.StatusBar'
         self.m_debug_status_bar.SetStatusText("Selection State: " + GraphicalElement.SELECTION_STATE_NAMES[selection.m_state], self.DebugField.SELECTION_STATE.value)
         
-        if not selection.isOK():
+        if not selection:
             self.m_debug_status_bar.SetStatusText("No object selected", self.DebugField.COMPONENT_SELECTED.value)
             return selection
         
@@ -242,16 +246,15 @@ class Canvas(wx.Panel):
         self.Refresh()
         pass
     
+    def RotateNode(self, node : 'GraphicalNode', mouse_position : 'wx.Point2D'):
+        
+        angle = 0
+        node.Rotate(angle)
+        
+        pass
+    
     def GetSimObjects(self):
         # Implement the logic to get simulation objects
-        pass
-        
-    def GetUniqueNodes(self):
-        # Implement the logic to get unique nodes
-        pass
-        
-    def GetUniqueEdges(self):
-        # Implement the logic to get unique edges
         pass
         
     def GetNextId(self):
@@ -402,7 +405,7 @@ class Canvas(wx.Panel):
     def OnLeftClickDown(self, event : 'wx.MouseEvent'):
         # Implement the logic to handle the left mouse button down event
         self.m_selection = self.Select(event.GetPosition())
-        self.m_selectionID = self.m_selection.m_element.m_id if self.m_selection.isOK() else -1
+        self.m_selectionID = self.m_selection.m_element.m_id if self.m_selection else -1
         self.m_previousMousePosition = wx.Point2D(event.GetPosition())
         prevMousePos = wx.Point2D(self.m_previousMousePosition)
         
@@ -413,7 +416,11 @@ class Canvas(wx.Panel):
         self.m_debug_status_bar.SetStatusText("Mouse Position(" + str(prevMousePos.x) + ", " 
                                             + str(prevMousePos.y) + ")", self.DebugField.MOUSE_POSITION.value)
         
-        if self.m_selection.m_state == Selection.State.NODE_INPUT:
+        if self.m_selection.m_state == Selection.State.NODE_ROTATOR:
+            # begin the rotation by getting the starting point
+            #self.m_rotationStartPoint = wx.Point2D(event.GetPosition())
+            pass
+        elif self.m_selection.m_state == Selection.State.NODE_INPUT:
             
             ## incrementing canvas static variables on addition of INCOMPLETE EDGE
             ## will need to decrement if we decide to remove the edge
@@ -429,7 +436,7 @@ class Canvas(wx.Panel):
             # add incomplete edge to edges list
             self.m_edges.append(self.m_incompleteEdge)
             
-            print("Selection state node output")
+            #print("Selection state node output")
             pass
         elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:            
 
@@ -445,7 +452,7 @@ class Canvas(wx.Panel):
             # add incomplete edge to edges list
             self.m_edges.append(self.m_incompleteEdge)
             
-            print("Selection state node output")
+            #print("Selection state node output")
             pass
         elif self.m_selection.m_state == Selection.State.NODE:
             
@@ -461,14 +468,14 @@ class Canvas(wx.Panel):
                     pass
                 pass
             
-            print("Selection state node")
+            #print("Selection state node")
             pass
         elif self.m_selection.m_state == Selection.State.NONE:
             self.m_isPanning = True
-            print("Selection state none")
+            #print("Selection state none")
             pass
         else:
-            print("SELECTION STATE ERROR IN OnLeftDown IN THE CANVAS OBJECT")
+            #print("SELECTION STATE ERROR IN OnLeftDown IN THE CANVAS OBJECT")
             pass
         
         self.m_previous_selection = self.m_selection
@@ -481,7 +488,12 @@ class Canvas(wx.Panel):
         # get end selection
         end_selection = self.Select(event.GetPosition())
         
-        if self.m_selection.m_state == Selection.State.NODE_INPUT:
+        if self.m_selection.m_state == Selection.State.NODE_ROTATOR:
+            
+            # lock in the rotation
+            
+            pass
+        elif self.m_selection.m_state == Selection.State.NODE_INPUT:
             
             # check that the user selected an output to pair with the input and then connect
             if end_selection.m_state == Selection.State.NODE_OUTPUT and end_selection.m_element != self.m_selection.m_element:
@@ -564,19 +576,46 @@ class Canvas(wx.Panel):
             mouse_position = wx.Point2D(event.GetPosition())      
             self.TransformPoint(mouse_position)
             self.PanCamera(mouse_position)
+            self.m_previousMousePosition = mouse_position
             refresh = True 
             pass
-        elif not self.m_selection.isOK():
-            return
-         
-        if self.m_selection.m_state == Selection.State.NODE_INPUT:
+        elif not self.m_selection:
+            return              
+              
+        if self.m_selection.m_state == Selection.State.NODE_ROTATOR:
+            # on motion, rotate the node by the mouse position
+            
+            # mouse_position = wx.Point2D(event.GetPosition())       
+            # dragVector = wx.Point2D(mouse_position.x - self.m_rotationStartPoint.x, mouse_position.y - self.m_rotationStartPoint.y)
+        
+            # # using the mouse vector, generate the second vector
+            # # needed to generate the angle of rotation
+        
+            # rotationEndVector = wx.Point2D(mouse_position.x - self.m_selection.m_element.m_position.x, mouse_position.y - self.m_selection.m_element.m_position.y)
+
+            # angle = Utility.get_angle_between_vectors(dragVector, rotationEndVector)
+            
+            # # check if the movement is left or right
+            # # negative values are left, positive values are right
+            # # if the movement is left, the angle is negative
+            # # however, once moved, the new location is the next 
+            # # origin of rotation
+            
+            # if dragVector.x < 0:
+            #     self.m_selection.m_element.Rotate(-angle)
+            #     pass
+            # elif dragVector.x > 0:
+            #     self.m_selection.m_element.Rotate(angle)
+            #     pass
+            pass    
+        elif self.m_selection.m_state == Selection.State.NODE_INPUT:
            
             #dragVector = wx.Point2D(mouse_position.x - self.m_incompleteEdge.m_sourcePoint.x, mouse_position.y - self.m_incompleteEdge.m_sourcePoint.y)
             mouse_position = wx.Point2D(event.GetPosition())       
             dragVector = wx.Point2D(mouse_position.x - self.m_previousMousePosition.x, mouse_position.y - self.m_previousMousePosition.y)
         
-            # Movement is not moving with mouse
-            # need to scale it down
+            # Movement scales with zoom factor
+            # need to scale it back down
             dragVector.x /= self.m_zoomLevel
             dragVector.y /= self.m_zoomLevel
             
@@ -589,7 +628,7 @@ class Canvas(wx.Panel):
             # print("Destination point: " + str(incompleteEdge.m_destinationPoint.x) + ", " + str(incompleteEdge.m_destinationPoint.y))            
 
             self.m_edges.append(incompleteEdge)
-
+            self.m_previousMousePosition = mouse_position
             refresh = True
             pass
         elif self.m_selection.m_state == Selection.State.NODE_OUTPUT:
@@ -598,8 +637,8 @@ class Canvas(wx.Panel):
             mouse_position = wx.Point2D(event.GetPosition())       
             dragVector = wx.Point2D(mouse_position.x - self.m_previousMousePosition.x, mouse_position.y - self.m_previousMousePosition.y)
         
-            # Movement is not moving with mouse
-            # need to scale it down
+            # Movement scales with zoom factor
+            # need to scale it back down
             dragVector.x /= self.m_zoomLevel
             dragVector.y /= self.m_zoomLevel
             
@@ -612,20 +651,27 @@ class Canvas(wx.Panel):
             # print("Destination point: " + str(incompleteEdge.m_destinationPoint.x) + ", " + str(incompleteEdge.m_destinationPoint.y))            
         
             self.m_edges.append(incompleteEdge)
-                    
+            self.m_previousMousePosition = mouse_position
             refresh = True   
             pass
         elif self.m_selection.m_state == Selection.State.NODE:
-            mouse_position = wx.Point2D(event.GetPosition())       
-            dragVector = wx.Point2D(mouse_position.x - self.m_previousMousePosition.x, mouse_position.y - self.m_previousMousePosition.y)
-        
-            # Movement is not moving with mouse
-            # need to scale it down
-            dragVector.x /= self.m_zoomLevel * 2
-            dragVector.y /= self.m_zoomLevel * 2
             
-            self.MoveNode(self.m_selection.m_element, dragVector)            
+            if not self.m_isRenaming:
             
+                mouse_position = wx.Point2D(event.GetPosition())       
+                dragVector = wx.Point2D(mouse_position.x - self.m_previousMousePosition.x, mouse_position.y - self.m_previousMousePosition.y)
+            
+                # Movement scales with zoom factor
+                # need to scale it back down
+                dragVector.x /= self.m_zoomLevel * 2
+                dragVector.y /= self.m_zoomLevel * 2
+                
+                self.MoveNode(self.m_selection.m_element, dragVector)   
+                self.m_previousMousePosition = mouse_position         
+                pass
+            else:
+                # renaming a node, do nothing
+                pass
             refresh = True
             pass
         elif self.m_selection.m_state == Selection.State.NONE:
@@ -638,8 +684,6 @@ class Canvas(wx.Panel):
         if refresh:
             self.Refresh()
             pass         
-        
-        self.m_previousMousePosition = mouse_position
         pass
     
     ## NOT WORKING
@@ -708,7 +752,7 @@ class Canvas(wx.Panel):
         selection = self.Select(event.GetPosition())
         self.m_previousMousePosition = wx.Point2D(event.GetPosition())
 
-        if(selection.isOK()):
+        if(selection):
             self.m_selection = selection
             self.m_selectionID = self.m_selection.m_element.m_id
             pass
@@ -719,6 +763,7 @@ class Canvas(wx.Panel):
             
             # after popping up the menu, deselect the node for movement
             self.m_selection.m_element.SetSelected(False)
+            self.m_selection.Reset()
             pass
         elif selection.m_state == Selection.State.NODE_INPUT:
             pass
@@ -728,7 +773,7 @@ class Canvas(wx.Panel):
             self.PopupMenu(self.m_canvasMenu)
             pass
         
-          
+        self.m_previous_selection = self.m_selection
         pass
     def OnLeaveWindow(self, event : 'wx.MouseEvent'):
         pass
@@ -741,9 +786,17 @@ class Canvas(wx.Panel):
     
     def OnAddSource(self, event : 'wx.CommandEvent'):
         # Implement the logic to add a source node
-        #center = self.TransformPoint(self.m_previousMousePosition)
         
-        center = self.TransformPoint(self.m_previousMousePosition) 
+        # (self.m_allowedDistanceFromOrigin / (self.m_numGridLines * self.m_numSubGridLines))
+        
+        center = self.TransformPoint(wx.Point2D(self.m_previousMousePosition))
+        
+        # mousePos = wx.Point2D(self.m_previousMousePosition)
+        # mousePos.x -= self.m_originTransformation.x
+        # mousePos.y -= self.m_originTransformation.y
+        # newCenter = wx.Point2D(self.m_originPoint)
+        
+        # center = wx.Point2D(newCenter.x + mousePos.x, newCenter.y + mousePos.y)
         
         self.AddNode(SimulationObject.Type.SOURCE, center, "Source")
         event.Skip()
@@ -759,8 +812,19 @@ class Canvas(wx.Panel):
         event.Skip()
         pass
     def OnRenameNode(self, event : 'wx.CommandEvent'):
-        # Implement the logic to rename a node
-        event.Skip()
+        # Implement the logic to rename a node        
+        selection : 'Selection'
+        selection = self.m_selection
+        
+        userPrompt = wx.TextEntryDialog(self, f"Rename {selection.m_element.m_label}", "Rename Node", selection.m_element.m_label)
+        
+        if userPrompt.ShowModal() == wx.ID_OK:
+            selection.m_element.m_label = userPrompt.GetValue()
+            pass
+        
+        userPrompt.Destroy()
+        self.Refresh()      
+
         pass
     def OnDeleteNode(self, event : 'wx.CommandEvent'):
         # Implement the logic to delete a node

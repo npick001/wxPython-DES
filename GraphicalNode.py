@@ -8,6 +8,11 @@ from GraphicalElement import GraphicalElement
 from SimulationObjects import SimulationObject
 from SimulationExecutive import GetSimulationTime
 
+# Units in GraphicalNode and children are in world coordinates
+# to convert to screen coordinates, the camera transform must be provided
+# - just be aware that all numbers in node are based on top left (0, 0)
+# - even though we have transformed the canvas space
+
 class GraphicalNode(GraphicalElement):
     class SizerLocations(int):
         TOP_LEFT = 0
@@ -17,16 +22,17 @@ class GraphicalNode(GraphicalElement):
         pass
     
     # static member variables
-    m_nextID = 1
+    m_nodeNextID = 1
     m_cornerRadius = 10
     
     def __init__(self, name, center : 'wx.Point2D'):
         
         self.m_nodeType = SimulationObject.Type.DEFAULT
         self.m_name = name
-        self.m_id = GraphicalNode.m_nextID
-        GraphicalNode.m_nextID += 1       
-        self.m_label = "GNode " + str(self.m_id)        
+        self.m_id = -1
+        self.m_nodeID = GraphicalNode.m_nodeNextID
+        GraphicalNode.m_nodeNextID = GraphicalNode.m_nodeNextID + 1
+        self.m_label = name + " " + str(self.m_id)
         self.m_next = []
         self.m_previous = []
         self.m_properties = []
@@ -47,6 +53,7 @@ class GraphicalNode(GraphicalElement):
         self.m_sizerColor = wx.RED
         # position
         self.m_position = wx.Point2D(center.x, center.y)
+        self.m_rotationAngle = 0
         # shape
         self.m_bodyShape = wx.Rect2D(self.m_position.x - self.m_bodySize.GetWidth() / 2, self.m_position.y - self.m_bodySize.GetHeight() / 2, 
                                      self.m_bodySize.GetWidth(), self.m_bodySize.GetHeight())
@@ -85,6 +92,12 @@ class GraphicalNode(GraphicalElement):
         self.m_outputPoint = self.GetTransform().TransformPoint(wx.Point2D(self.m_outputRect.x + self.m_outputRect.width / 2, self.m_outputRect.y + self.m_outputRect.height / 2))
         pass
     
+    def __eq__(self, other : 'GraphicalNode') -> bool:
+        if other == None:
+            return False
+        
+        return self.m_nodeID == other.m_nodeID
+    
     def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
         ## VIRTUAL FUNCTION FOR CHILDREN TO IMPLEMENT
         pass
@@ -111,7 +124,10 @@ class GraphicalNode(GraphicalElement):
     
     def GetTransform(self):
         transform = wx.AffineMatrix2D()
-        transform.Translate(self.m_position.x, self.m_position.y)     
+        # scaling 
+        #transform.Translate(-self.m_position.x, -self.m_position.y)
+        transform.Rotate(self.m_rotationAngle)# rotating
+        transform.Translate(self.m_position.x, self.m_position.y) # translating
         return transform
     
     def AddNext(self, next : 'GraphicalNode'):
@@ -136,7 +152,14 @@ class GraphicalNode(GraphicalElement):
         
         self.m_is_selected = False
         
-        if self.m_inputRect.Contains(clickPosition):
+        if self.m_rotator.Contains(clickPosition):
+            self.m_is_selected = True
+            selection = Selection()
+            selection.m_element = self
+            selection.m_state = Selection.State.NODE_ROTATOR
+            return selection
+                
+        elif self.m_inputRect.Contains(clickPosition):
             selection = Selection()
             selection.m_element = self
             selection.m_state = Selection.State.NODE_INPUT           
@@ -165,13 +188,13 @@ class GraphicalNode(GraphicalElement):
         
         self.m_inputRect.x += xdistance
         self.m_inputRect.y += ydistance
-        # self.m_inputPoint.x = self.m_inputRect.x + self.m_inputRect.width / 2
-        # self.m_inputPoint.y = self.m_inputRect.y + self.m_inputRect.height / 2
+        self.m_inputPoint.x += xdistance * 2
+        self.m_inputPoint.y += ydistance * 2
         
         self.m_outputRect.x += xdistance
         self.m_outputRect.y += ydistance
-        # self.m_outputPoint.x = self.m_outputRect.x + self.m_outputRect.width / 2
-        # self.m_outputPoint.y = self.m_outputRect.y + self.m_outputRect.height / 2
+        self.m_outputPoint.x += xdistance * 2
+        self.m_outputPoint.y += ydistance * 2
         
         self.m_rotator.x += xdistance
         self.m_rotator.y += ydistance       
@@ -192,16 +215,38 @@ class GraphicalNode(GraphicalElement):
             input.m_destinationPoint.y = self.m_inputPoint.y
             pass        
         pass
+
+    def Rotate(self, angle):
+        
+        # translate so rotation is about center of node
+        # originalPosition = wx.Point2D(self.m_position.x, self.m_position.y)
+        # originalAngle = self.m_rotationAngle
+        # self.m_position.x = 0
+        # self.m_position.y = 0
+        
+        
+        
+        self.m_rotationAngle += angle
+        
+        
+        
+        pass
     
     
 ### BEGIN INHERITED SIMULATION OBJECTS
-class GSource(GraphicalNode):   
-    m_entity = Entity
-     
+class GSource(GraphicalNode):       
+    
+    # static variables
+    m_nextID = 1
+    
     def __init__(self, name, center):
         super().__init__(name, center)
         
         self.m_type = SimulationObject.Type.SOURCE
+        
+        self.m_id = GSource.m_nextID
+        GSource.m_nextID = GSource.m_nextID + 1
+        self.m_label = name + " " + str(self.m_id)
         
         self.m_numToGen = 10
         self.m_entity = Entity(GetSimulationTime())
@@ -268,8 +313,9 @@ class GSource(GraphicalNode):
             gc.DrawRectangle(self.m_rotator.x, self.m_rotator.y, self.m_rotator.width, self.m_rotator.height)           
             pass
         
-        #gc.SetFont(wx.NORMAL_FONT, self.m_labelColor)
-        #gc.GetFullTextExtent(self.m_name)
+        gc.SetFont(wx.NORMAL_FONT, self.m_labelColor)
+        textExtent = gc.GetFullTextExtent(self.m_label)
+        gc.DrawText(self.m_label, self.m_position.x - textExtent[0] / 2, self.m_position.y - textExtent[1] / 1.5)
         pass    
     pass
 
@@ -278,8 +324,15 @@ class GServer(GraphicalNode):
         BUSY = 0
         IDLE = 1
     
+    # static variables
+    m_nextID = 1
+    
     def __init__(self, name, center):
         super().__init__(name, center) 
+        
+        self.m_id = GServer.m_nextID
+        GServer.m_nextID = GServer.m_nextID + 1
+        self.m_label = name + " " + str(self.m_id)
         
         self.m_type = SimulationObject.Type.SERVER  
         self.m_state = self.State.IDLE
@@ -345,13 +398,24 @@ class GServer(GraphicalNode):
             gc.SetBrush(wx.Brush(self.m_ioColor))
             gc.DrawRectangle(self.m_rotator.x, self.m_rotator.y, self.m_rotator.width, self.m_rotator.height)           
             pass
+        
+        gc.SetFont(wx.NORMAL_FONT, self.m_labelColor)
+        textExtent = gc.GetFullTextExtent(self.m_label)
+        gc.DrawText(self.m_label, self.m_position.x - textExtent[0] / 2, self.m_position.y - textExtent[1] / 1.5)
         pass
     pass
 
 class GSink(GraphicalNode):
     
+    # static variables
+    m_nextID = 1
+    
     def __init__(self, name, center):
         super().__init__(name, center) 
+        
+        self.m_id = GSink.m_nextID
+        GSink.m_nextID = GSink.m_nextID + 1
+        self.m_label = name + " " + str(self.m_id)
         
         self.m_type = SimulationObject.Type.SINK              
         pass 
@@ -408,6 +472,10 @@ class GSink(GraphicalNode):
             gc.SetBrush(wx.Brush(self.m_ioColor))
             gc.DrawRectangle(self.m_rotator.x, self.m_rotator.y, self.m_rotator.width, self.m_rotator.height)           
             pass
+        
+        gc.SetFont(wx.NORMAL_FONT, self.m_labelColor)
+        textExtent = gc.GetFullTextExtent(self.m_label)
+        gc.DrawText(self.m_label, self.m_position.x - textExtent[0] / 2, self.m_position.y - textExtent[1] / 1.5)
         pass
     pass    
     

@@ -1,4 +1,5 @@
 import wx
+from Selection import Selection
 
 class GraphicalElement:
     SELECTION_STATE_NAMES = [
@@ -6,6 +7,7 @@ class GraphicalElement:
 		"NODE",
 		"NODE_OUTPUT",
 		"NODE_INPUT",
+        "NODE_ROTATOR",
 		"NODE_SIZER",
 		"EDGE"]
     
@@ -32,4 +34,5 @@ class GraphicalElement:
     
     def Select(self, camera : 'wx.AffineMatrix2D', clickPosition : 'wx.Point2D'):
         # VIRTUAL FUNCTION TO BE OVERRIDDEN
-        pass
+        selection = Selection()
+        return selection
