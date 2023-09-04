@@ -92,11 +92,15 @@ class GraphicalNode(GraphicalElement):
         self.m_outputPoint = self.GetTransform().TransformPoint(wx.Point2D(self.m_outputRect.x + self.m_outputRect.width / 2, self.m_outputRect.y + self.m_outputRect.height / 2))
         pass
     
-    def __eq__(self, other : 'GraphicalNode') -> bool:
+    def __eq__(self, other: 'GraphicalNode') -> bool:
         if other == None:
             return False
         
         return self.m_nodeID == other.m_nodeID
+    
+    # create hashing function for this object
+    def __hash__(self) -> int:
+        return hash(self.m_nodeID)
     
     def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
         ## VIRTUAL FUNCTION FOR CHILDREN TO IMPLEMENT

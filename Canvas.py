@@ -1,14 +1,16 @@
 import wx
 import math
+import Utility
+import Distributions
 from collections import deque
 from enum import Enum, IntEnum
-import Utility
 from Selection import Selection
-from SimProject import NodeFactory
 from GraphicalElement import GraphicalElement
 from GraphicalEdge import GraphicalEdge
+from Entity import Entity
 from GraphicalNode import GraphicalNode, GSource, GServer, GSink
 from SimulationObjects import SimulationObject, Source, Server, Sink
+from SimulationExecutive import GetSimulationTime
 
 class Canvas(wx.Panel):
     class DebugField(IntEnum):
@@ -42,6 +44,7 @@ class Canvas(wx.Panel):
         self.m_elements = [] # all elements including nodes and edges
         self.m_incompleteEdge = GraphicalEdge(self.m_edge_next_ID + 1)
         self.m_edge_next_ID = self.m_edge_next_ID + 1
+        self.m_simulation_project = None
         
         # Debug status bar used to display node information
         self.m_debug_status_bar = status_bar         
@@ -255,7 +258,7 @@ class Canvas(wx.Panel):
     
     def GetSimObjects(self):
         # Implement the logic to get simulation objects
-        pass
+        return self.m_nodes.copy()
         
     def GetNextId(self):
         # Implement the logic to get the next ID
@@ -263,6 +266,7 @@ class Canvas(wx.Panel):
         
     def SetSimulationProject(self, parent_project):
         # Implement the logic to set the simulation project
+        self.m_simulation_project = parent_project
         pass
         
     def PopulateCanvas(self, sim_objects):
@@ -830,3 +834,49 @@ class Canvas(wx.Panel):
         # Implement the logic to delete a node
         event.Skip()
         pass
+    
+
+class NodeFactory:
+    def __init__(self) -> None:
+        pass
+    
+    @classmethod
+    def CreateGraphicalNode(cls, type : 'SimulationObject.Type',  center : 'wx.Point2D', label="SimulationObject") -> 'SimulationObject':
+        
+        if(type == SimulationObject.Type.SOURCE):
+            source = GSource("Source", center)            
+            return source
+        
+        elif(type == SimulationObject.Type.SERVER):
+            server = GServer("Server", center)
+            return server
+        
+        elif(type == SimulationObject.Type.SINK):
+            sink = GSink("Sink", center)
+            return sink
+        
+        else:
+            print("ERROR IN CREATEGRAPHICALNODE, TYPE DOES NOT EXIST")
+            pass
+        pass
+    
+    @classmethod
+    def CreateSimulationObject(cls, type : 'SimulationObject.Type') -> 'SimulationObject':
+        
+        if(type == SimulationObject.Type.SOURCE):
+            source = Source("Source", 10, Entity(GetSimulationTime()), Distributions.Exponential(1))
+            return source
+        
+        elif(type == SimulationObject.Type.SERVER):
+            server = Server("Server", Distributions.Triangular(1, 2, 3))
+            return server
+        
+        elif(type == SimulationObject.Type.SINK):
+            sink = Sink("Sink")
+            return sink
+        
+        else:
+            print("ERROR IN CREATESIMULATIONOBJECT, TYPE DOES NOT EXIST")
+            pass
+        pass
+    pass

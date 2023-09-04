@@ -2,9 +2,10 @@ import wx
 import wx.aui
 import numpy as np
 import matplotlib.pyplot as plt
-from enum import Enum
-from GraphingPanels import HistogramPanel
 import Canvas
+from enum import Enum
+from SimProject import SimulationProject
+from GraphingPanels import HistogramPanel
 
 class MainFrame(wx.Frame):
     class Enums(Enum):
@@ -72,9 +73,15 @@ class MainFrame(wx.Frame):
         
         # Set menu bar for this frame
         self.SetMenuBar(self.menubar)
+        
+        # generate the canvas
         self.panel = Canvas.Canvas(self, self.m_debug_status_bar)
         self.aui_manager.AddPane(self.panel, wx.aui.AuiPaneInfo().CenterPane().Dockable(True))
         self.panel.InitializeOriginLocation(self.GetSize())
+        
+        # simulation project
+        self.m_simulation_project = SimulationProject()
+        self.m_simulation_project.SetCanvas(self.panel)
         
         # Update the aui manager
         self.aui_manager.Update()
@@ -94,16 +101,16 @@ class MainFrame(wx.Frame):
         self.edit_menu.Bind(wx.EVT_MENU, self.OnCopy)
         self.edit_menu.Bind(wx.EVT_MENU, self.OnPaste)
         # View Menu
-        self.view_menu.Bind(wx.EVT_MENU, self.OnCreateNotebook)
-        self.view_menu.Bind(wx.EVT_MENU, self.OnCreateCanvas)
+        self.view_menu.Bind(wx.EVT_MENU, self.OnCreateNotebook, id=self.Enums.ID_CREATE_NOTEBOOK.value)
+        self.view_menu.Bind(wx.EVT_MENU, self.OnCreateCanvas, id=self.Enums.ID_CREATE_CANVAS.value)
         # Settings Menu
-        self.settings_menu.Bind(wx.EVT_MENU, self.OnChangeModelSettings)
+        self.settings_menu.Bind(wx.EVT_MENU, self.OnChangeModelSettings, id=self.Enums.ID_MODEL_SETTINGS.value)
         # Project Menu
-        self.project_menu.Bind(wx.EVT_MENU, self.OnBuild)
-        self.project_menu.Bind(wx.EVT_MENU, self.OnRun)
-        self.project_menu.Bind(wx.EVT_MENU, self.OnBuildAndRun)
+        self.project_menu.Bind(wx.EVT_MENU, self.OnBuild, id=self.Enums.ID_BUILD.value)
+        self.project_menu.Bind(wx.EVT_MENU, self.OnRun, id=self.Enums.ID_RUN.value)
+        self.project_menu.Bind(wx.EVT_MENU, self.OnBuildAndRun, id=self.Enums.ID_BUILD_AND_RUN.value)
         # Statistics Menu
-        self.stats_menu.Bind(wx.EVT_MENU, self.OnClickAnalyzer)
+        self.stats_menu.Bind(wx.EVT_MENU, self.OnClickAnalyzer, id=self.Enums.ID_INPUT_ANALYZER.value)
     
     ### EVENT HANDLING
     
@@ -200,11 +207,22 @@ class MainFrame(wx.Frame):
         return 0
     
     def OnBuild(self, event):
-        return 0
+        self.m_simulation_project.Build()
+        self.m_simulation_project.CheckBuildViability()
+        pass
     
     def OnRun(self, event):
-        return 0
+        self.m_simulation_project.Run()
+        pass
     
     def OnBuildAndRun(self, event):
-        return 0
+        
+        if self.m_simulation_project.HasBeenBuilt():
+            
+            self.m_simulation_project.Run()
+            pass
+        else:
+            wx.MessageBox("You must build the project before running it.", "Error", wx.OK | wx.ICON_ERROR)
+            pass
+        pass
         
