@@ -793,7 +793,7 @@ class Canvas(wx.Panel):
         
         # (self.m_allowedDistanceFromOrigin / (self.m_numGridLines * self.m_numSubGridLines))
         
-        center = self.TransformPoint(wx.Point2D(self.m_previousMousePosition))
+        center = self.TransformPoint(wx.Point2D(self.m_previousMousePosition.x, self.m_previousMousePosition.y))
         
         # mousePos = wx.Point2D(self.m_previousMousePosition)
         # mousePos.x -= self.m_originTransformation.x
