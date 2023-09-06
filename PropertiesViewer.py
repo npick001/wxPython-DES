@@ -3,17 +3,18 @@ import wx.propgrid as wxpg
 
 class PropertiesViewer(wx.Panel):
     
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
-        
-        width, height = self.GetClientSize()
-        width *= 0.2
-        panel_size = wx.Size(width, height)
+    def __init__(self, parent : 'wx.Window'):
+        super(wx.Panel, self).__init__(parent)
         
         self.m_selected_node = None
+        #self.m_main_frame = MainFrame(parent=None, title="Python Discrete Simulator")
         
         self.m_properties = []
-        self.m_property_grid = wxpg.PropertyGrid(self, wx.ID_ANY, wx.DefaultPosition, panel_size, wxpg.PG_SPLITTER_AUTO_CENTER | wxpg.PG_BOLD_MODIFIED)
+        self.m_property_grid = wxpg.PropertyGrid(self, wx.ID_ANY, wx.DefaultPosition, self.GetSize(), wxpg.PG_SPLITTER_AUTO_CENTER | wxpg.PG_BOLD_MODIFIED)
+        width, height = parent.GetSize()
+        #width *= 0.2
+        self.SetSize(wx.Size(width, height))
+        
         
         self.Bind(wx.EVT_SIZE, self.OnResize)
         self.Bind(wxpg.EVT_PG_CHANGED, self.OnDistributionChange)
@@ -63,11 +64,10 @@ class PropertiesViewer(wx.Panel):
             wx.LogMessage("Selected property to edit does not exist.")
             pass
         pass
-    def RemoveProperty(self, property):
+    def RemoveProperty(self, property : 'wxpg.PGProperty'):
         
         if property in self.m_properties:
             
-            property : 'wxpg.PGProperty'
             property.DeleteChildren()
             
             self.m_property_grid.RemoveProperty(property)
@@ -79,10 +79,22 @@ class PropertiesViewer(wx.Panel):
         pass
     def ResetPropertyGrid(self):
         
+        for prop in self.m_properties:
+            prop : 'wxpg.PGProperty'
+            prop.DeleteChildren()
+            self.m_property_grid.RemoveProperty(prop)
+            pass        
         pass
     
     # EVENT HANDLING
     def OnResize(self, event):
+        
+        width = self.GetSize().x
+        height = self.GetSize().y
+        new_size = wx.Size(width, height)
+        
+        self.m_property_grid.SetSize(new_size)
+        self.Refresh()        
         pass
     def OnDistributionChange(self, event):
         pass

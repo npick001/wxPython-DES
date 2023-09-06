@@ -9,7 +9,7 @@ from SimulationExecutive import GetSimulationTime, RunSimulation
 
 class MyApp(wx.App):
     def OnInit(self):
-        self.frame = MainFrame(parent=None, title="Python Discrete Simulator")
+        self.frame = MainFrame.GetInstance()
         self.frame.Show()
         return True
 

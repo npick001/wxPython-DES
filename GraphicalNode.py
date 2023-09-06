@@ -1,5 +1,6 @@
 import wx
 import Distributions
+import wx.propgrid as wxpg
 from enum import Enum
 from Entity import Entity
 from Selection import Selection
@@ -40,6 +41,11 @@ class GraphicalNode(GraphicalElement):
         self.m_inputs = []
         self.m_outputs = []
         self.m_is_selected = False
+        
+        # property viewer things
+        header_property = wxpg.StringProperty("Property", wxpg.PG_LABEL, "Value")
+        self.m_properties = []
+        self.m_properties.append(header_property)
         
         ## graphical characteristics
         # size
@@ -105,6 +111,9 @@ class GraphicalNode(GraphicalElement):
     def Draw(self, camera : 'wx.AffineMatrix2D', gc : 'wx.GraphicsContext'):
         ## VIRTUAL FUNCTION FOR CHILDREN TO IMPLEMENT
         pass
+    
+    def GetProperties(self) -> list['wxpg.PGProperty']:
+        return self.m_properties
     
     def GetInputPoint(self):
         return self.m_inputPoint

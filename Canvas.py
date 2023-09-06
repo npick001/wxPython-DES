@@ -35,6 +35,7 @@ class Canvas(wx.Panel):
         
         self.SetBackgroundColour(wx.WHITE)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        self.m_mainframe_reference = None
         
         self.m_node_next_ID = 0
         self.m_edge_next_ID = 0
@@ -115,7 +116,7 @@ class Canvas(wx.Panel):
         # self.Bind(wx.EVT_KEY_UP, self.OnArrowKeyUp)
         #self.Bind(wx.EVT_MIDDLE_DOWN, self.OnCharHook)
         #self.Bind(wx.EVT_MIDDLE_DOWN, self.OnDeleteKey)
-        
+    
     def AddNode(self, node_type : 'SimulationObject.Type', center : 'wx.Point2D', label=None):
         # Implement the logic to add a graphical node
         
@@ -555,6 +556,8 @@ class Canvas(wx.Panel):
             pass
         elif self.m_selection.m_state == Selection.State.NODE:
             #self.m_edge_next_ID = self.m_edge_next_ID - 1
+            
+            self.m_mainframe_reference.RegisterNewSelection(end_selection.m_element)
             pass
         elif self.m_selection.m_state == Selection.State.NONE:
             # user is no longer panning camera
