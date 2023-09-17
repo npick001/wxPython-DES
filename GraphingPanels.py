@@ -10,13 +10,12 @@ class HistogramPanel(wx.Panel):
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.canvas, 1, wx.EXPAND)
+        self.num_bins = 20
         self.SetSizer(self.sizer)
         self.draw_figure()
 
-    def draw_figure(self):
-        x = np.linspace(0, 10, 100)
-        y = np.sin(x)
-        self.ax.plot(x, y)
+    def draw_figure(self, data):
+        self.ax.hist(data, bins=self.num_bins)
         self.ax.set_title("Simple sin wave")
         self.ax.set_xlabel("x")
         self.ax.set_ylabel("y")
