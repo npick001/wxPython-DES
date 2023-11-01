@@ -7,7 +7,7 @@ from InputAnalyzer import InputAnalyzer
 from PropertiesViewer import PropertiesViewer 
 from enum import Enum
 from SimProject import SimulationProject
-from GraphingPanels import HistogramPanel
+from GraphingPanels import *
 
 class MainFrame(wx.Frame):
     class Enums(Enum):      
@@ -256,7 +256,19 @@ class MainFrame(wx.Frame):
         pass
     
     def OnRun(self, event):
-        self.m_simulation_project.Run()
+        stat_panels = self.m_simulation_project.Run(self)
+        
+        for panel in stat_panels:
+            
+            chart_type = panel.m_graph_type
+            if(chart_type == GraphingPanel.GraphType.LINE):
+                panel : 'LineGraph'
+                
+                panel.draw_graph(panel.m_x, panel.m_y)
+                pass
+            
+            self.m_notebook.AddPage(panel, panel.m_title)
+            pass        
         pass
     
     def OnBuildAndRun(self, event):

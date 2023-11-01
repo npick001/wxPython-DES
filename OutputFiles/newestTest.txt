@@ -1,0 +1,84 @@
+Source
+Entities Created: 10
+
+Server
+Time Utilized: 18.286575154817058
+Time Starved: 6.628852621705956
+Resource Utilization: 0.7339458635363224
+Number Processed: 10
+Wait Time: 111.43101310591607
+Total Service Time: 18.286575154817058
+
+Sink
+Entities Destroyed: 10
+
+Source
+Entities Created: 10
+
+Server
+Time Utilized: 20.02691681209058
+Time Starved: 1.9691501670177693
+Resource Utilization: 0.9104771699009624
+Number Processed: 10
+Wait Time: 98.218607595044
+Total Service Time: 20.02691681209058
+
+Sink
+Entities Destroyed: 10
+
+Source
+Entities Created: 10
+
+Server
+Time Utilized: 17.78507697301797
+Time Starved: 18.543410690613026
+Resource Utilization: 0.48956282291990044
+Number Processed: 10
+Wait Time: 179.66675155337975
+Total Service Time: 17.78507697301797
+
+Sink
+Entities Destroyed: 10
+
+Source
+Entities Created: 10
+
+Server
+Time Utilized: 15.806089395700788
+Time Starved: 41.37343942408767
+Resource Utilization: 0.27642916480680546
+Number Processed: 8
+Wait Time: 194.6282586485372
+Total Service Time: 15.806089395700788
+
+Sink
+Entities Destroyed: 8
+
+Source
+Entities Created: 10
+
+Server
+Time Utilized: 19.411147513986105
+Time Starved: 19.83723192241396
+Resource Utilization: 0.4945719490263502
+Number Processed: 10
+Wait Time: 211.09931987776474
+Total Service Time: 19.411147513986105
+
+Sink
+Entities Destroyed: 10
+
+Source
+Entities Created: 10
+
+Server
+Time Utilized: 20.964390734327477
+Time Starved: 12.418135337774874
+Resource Utilization: 0.6280049235653061
+Number Processed: 10
+Wait Time: 164.16466037026757
+Total Service Time: 20.964390734327477
+
+Sink
+Entities Destroyed: 10
+

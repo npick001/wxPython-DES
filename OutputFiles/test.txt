@@ -1,0 +1,17 @@
+Source
+Time Utilized: 39.33756223317045
+Time Starved: 3.8980478187239456
+Resource Utilization: 0.909841729675024
+Entities Created: 10
+
+Server
+Time Utilized: 21.823751700911064
+Time Starved: 21.411858350983334
+Resource Utilization: 0.5047633576747657
+Number Processed: 10
+Wait Time: 214.17384405490026
+Total Service Time: 21.823751700911064
+
+Sink
+Entities Destroyed: 10
+

@@ -5,6 +5,7 @@ from Canvas import Canvas
 from GraphicalNode import GraphicalNode, GSource, GServer, GSink
 from SimulationObjects import SimulationObject, Source, Server, Sink
 from Visitor import *
+from GraphingPanels import LineGraph
 
 from SimulationExecutive import GetSimulationTime, RunSimulation, TimeUnit
 
@@ -75,7 +76,7 @@ class SimulationProject:
     def CheckBuildViability(self) -> bool:
         pass
     
-    def Run(self) -> None:
+    def Run(self, mainframe) -> list:
         RunSimulation()
         
         # prompt the user for what file name they want to use to save the stats to
@@ -86,7 +87,8 @@ class SimulationProject:
         else:
             self.WriteSimulationStatistics(dlg.GetPath())
             pass
-        pass
+        
+        return self.GraphSimulationStatistics(mainframe)
     
     def WriteSimulationStatistics(self, filename : str) -> None:
         
@@ -229,6 +231,33 @@ class SimulationProject:
                 pass
             pass
         pass
+    
+    def GraphSimulationStatistics(self, mainframe) -> list:
+        
+        stat_panels = []
+        
+        # find all the simulation objects with graphable statistics
+        for simobj in self.m_instantiated_nodes:
+            simobj : 'SimulationObject'
+            if(simobj.HasGraphableStatistics()):
+                if(simobj.m_type == SimulationObject.Type.SERVER):
+
+                    simobj : 'Server'
+                    
+                    state_chart = LineGraph(mainframe)
+                    state_chart.m_x = simobj.gsm_event_times
+                    state_chart.m_y = simobj.gsm_state_trajectory
+                    
+                    self.m_xLabel = "Event Time"
+                    self.m_yLabel = "State value"
+                    state_chart.m_title = simobj.m_name + " State Trajectory"                    
+                    
+                    stat_panels.append(state_chart)
+                    pass    
+                ## elif(other simulation objects with graphable statistics)
+                pass
+            pass
+        return stat_panels  
     pass
     
     
