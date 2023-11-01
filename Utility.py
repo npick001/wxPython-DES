@@ -23,3 +23,21 @@ def get_angle_between_vectors(vec1, vec2):
         # theta equals arctan of dot product divided by the product of the magnitudes
         theta = math.atan(cross_product / dot_product)
         return theta
+
+
+#     Writes data to a file.
+#     :param filename: Name of the file to write to.
+#     :param data: The data to write to the file.
+#     :param mode: Mode in which to open the file ('a' for append and 'w' for truncate/write).
+def write_to_file(filename: str, data: any, mode: str = 'w'):
+
+    # If the mode provided isn't 'a' or 'w', raise an error
+    if mode not in ['a', 'w']:
+        raise ValueError("Mode must be either 'a' (append) or 'w' (truncate/write)")
+
+    # If the data is binary or a bytearray, open the file in binary mode
+    if isinstance(data, (bytes, bytearray)):
+        mode += 'b'
+
+    with open(filename, mode) as file:
+        file.write(data)

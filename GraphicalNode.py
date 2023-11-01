@@ -43,9 +43,8 @@ class GraphicalNode(GraphicalElement):
         self.m_is_selected = False
         
         # property viewer things
-        header_property = wxpg.StringProperty("Property", wxpg.PG_LABEL, "Value")
         self.m_properties = []
-        self.m_properties.append(header_property)
+        #self.m_properties.append()
         
         ## graphical characteristics
         # size

@@ -1,4 +1,5 @@
 import random
+from Visitor import *
 from enum import Enum
 from FIFO import FIFO
 from Entity import Entity
@@ -9,6 +10,7 @@ from SimulationExecutive import EventAction
 from SimulationExecutive import GetSimulationTime
 from SimulationExecutive import ScheduleEventIn
 from SimulationExecutive import ScheduleEventAt
+from Visitor import Visitor
 
 class SimulationObject:
     class Type(Enum):
@@ -18,7 +20,7 @@ class SimulationObject:
         SINK = "Sink"
     
     # static member variables
-    m_nextID = 0
+    m_nextID = 0  
     
     def __init__(self, name):
         
@@ -31,6 +33,14 @@ class SimulationObject:
         # routing vars
         self.m_next = []
         self.m_previous = []
+        
+        # statistics handling
+        self.m_time_utilized = 0
+        self.m_time_starved = 0
+        self.m_resource_utilization = 0
+        pass
+    
+    def Accept(self, visitor : 'Visitor'):
         pass
     
     def Arrive(self, entity : 'Entity'):
@@ -76,8 +86,9 @@ class SimulationObject:
     pass
 
 ### BEGIN INHERITED SIMULATION OBJECTS
-class Source(SimulationObject):   
+class Source(SimulationObject):       
     m_entity = Entity
+    m_totalEntitiesCreated = 0
     
     def __init__(self, name, numGen, entity : 'Entity', arrivalDist : 'Distribution'):
         super().__init__(name)
@@ -89,8 +100,15 @@ class Source(SimulationObject):
         self.m_arrivalDist = arrivalDist
         self.m_infiniteGen = False
         
+        # statistics handling
+        self.sm_entitiesCreated = 0
+        
         ScheduleEventIn(0.0, "Placeholder time unit", self.ArriveEA(self))
         pass    
+    
+    def Accept(self, visitor : 'Visitor'):
+        visitor.visit_source(self)
+        pass
     
     def NodeProcess(self, entity: Entity) -> None:
         ## SHOULD NEVER BE CALLED
@@ -133,6 +151,12 @@ class Source(SimulationObject):
     pass
 
 class Server(SimulationObject):
+    
+    ## static member variables
+    sm_totalProcessed = 0
+    sm_totalWaitTime = 0
+    sm_totalIdleTime = 0
+    
     class State(Enum):
         BUSY = 0
         IDLE = 1
@@ -143,8 +167,17 @@ class Server(SimulationObject):
         self.m_type = self.Type.SERVER  
         self.m_state = self.State.IDLE
         self.m_serviceDist = serviceTime
-        
         self.m_queue = FIFO()
+        
+        ## statistics handling
+        self.sm_numberProcessed = 0
+        self.sm_waitTime = 0
+        self.sm_totalServiceTime = 0
+        self.sm_idleTime = 0        
+        pass
+    
+    def Accept(self, visitor: Visitor):
+        visitor.visit_server(self)
         pass
     
     def NodeProcess(self, entity: Entity) -> None:
@@ -213,10 +246,19 @@ class Server(SimulationObject):
 
 class Sink(SimulationObject):
     
+    ## static member variables
+    sm_totalEntitiesDestroyed = 0
+    
     def __init__(self, name):
         super().__init__(name)
         
-        self.m_type = self.Type.SINK              
+        self.m_type = self.Type.SINK   
+        
+        self.sm_entitiesDestroyed = 0
+        pass
+    
+    def Accept(self, visitor: Visitor):
+        visitor.visit_sink(self)
         pass
     
     def NodeProcess(self, entity: Entity) -> None:

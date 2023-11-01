@@ -15,15 +15,18 @@ class PropertiesViewer(wx.Panel):
         #width *= 0.2
         self.SetSize(wx.Size(width, height))
         
+        self.header_property = wxpg.StringProperty("Property", wxpg.PG_LABEL, "Value")
+        self.m_property_grid.Append(self.header_property)
         
         self.Bind(wx.EVT_SIZE, self.OnResize)
         self.Bind(wxpg.EVT_PG_CHANGED, self.OnDistributionChange)
         self.Bind(wxpg.EVT_PG_CHANGED, self.OnDistributionPropertyChange)
             
-    def Reset(self):
-        for property in self.m_properties:
-            self.m_property_grid.RemoveProperty(property)
-            pass    
+    def Reset(self):       
+        # iteratively remove all properties except the header
+        for i in range(1, len(self.m_properties)):
+            self.m_property_grid.RemoveProperty(self.m_properties[i])
+            pass
         pass
     def Refresh(self):
         self.m_property_grid.Refresh()
