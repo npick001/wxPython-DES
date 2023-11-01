@@ -3,20 +3,21 @@ import wx.aui
 import numpy as np
 import matplotlib.pyplot as plt
 import Canvas
+from InputAnalyzer import InputAnalyzer
 from PropertiesViewer import PropertiesViewer 
 from enum import Enum
 from SimProject import SimulationProject
 from GraphingPanels import HistogramPanel
 
 class MainFrame(wx.Frame):
-    class Enums(Enum):
+    class Enums(Enum):      
         ID_CREATE_NOTEBOOK = 990
         ID_CREATE_CANVAS = 991
         ID_MODEL_SETTINGS = 992
         ID_INPUT_ANALYZER = 993
         ID_BUILD = 994
         ID_RUN = 995
-        ID_BUILD_AND_RUN = 996
+        ID_BUILD_AND_RUN = 996      
     
     # static variables
     _instance = None
@@ -32,12 +33,16 @@ class MainFrame(wx.Frame):
     def __init__(self):
         super(MainFrame, self).__init__(None, title="Python Discrete Simulator", size=(800, 600))
         
+        self.Maximize(True)
+        
         # Initialize the AUI manager
         self.m_aui_manager = wx.aui.AuiManager(self)
-        self.Maximize(True)
 
         # Create a menu bar
         self.m_menubar = wx.MenuBar()
+        
+        # create center notebook with fixed width tabs and close button
+        self.m_notebook = wx.aui.AuiNotebook(self, style=wx.aui.AUI_NB_CLOSE_ON_ACTIVE_TAB)
         
         self.m_status_bar_fields = 4
         self.m_debug_status_bar = self.CreateStatusBar()
@@ -91,6 +96,10 @@ class MainFrame(wx.Frame):
         self.m_canvas.m_mainframe_reference = self
         self.m_center_pane.AddPage(self.m_canvas, "Canvas")
         self.m_canvas.InitializeOriginLocation(self.GetSize())
+        
+        # add the canvas to the notebook
+        self.m_notebook.AddPage(self.m_canvas, "Canvas")
+        self.m_aui_manager.AddPane(self.m_notebook, wx.aui.AuiPaneInfo().CenterPane().Dockable(True))
         self.m_aui_manager.AddPane(self.m_center_pane, wx.aui.AuiPaneInfo().CenterPane().Dockable(True))
         
         # simulation project
@@ -109,7 +118,7 @@ class MainFrame(wx.Frame):
         # Basic Panel Events
         self.Bind(wx.EVT_SIZE, self.OnResize)      
         # File Menu
-        self.m_file_menu.Bind(wx.EVT_MENU, self.OnOpen)
+        self.m_file_menu.Bind(wx.EVT_MENU, self.OnOpen, id=wx.ID_OPEN)
         self.m_file_menu.Bind(wx.EVT_MENU, self.OnSave)
         self.m_file_menu.Bind(wx.EVT_MENU, self.OnSaveAs)
         self.m_file_menu.Bind(wx.EVT_MENU, self.OnExit)
@@ -154,23 +163,33 @@ class MainFrame(wx.Frame):
         self.Close()
             
     def OnOpen(self, event):
-        ## handle opening file
-        wildcard = "Text files (*.txt)|*.txt|All files (*.*)|*.*"
         
-        dialog = wx.FileDialog(
-            self,
-            message="Choose a file",
-            defaultDir="",
-            defaultFile="",
-            wildcard=wildcard,
-            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
-        )
+        try:
+            print("OnOpen called")
+        # rest of your code
+        except Exception as e:
+            print(f"Exception occurred: {e}")
         
-        if dialog.ShowModal() == wx.ID_OK:
-            selected_path = dialog.GetPath()
-            print("Selected file:", selected_path)
+        # ## handle opening file
+        # wildcard = "Text files (*.txt)|*.txt|All files (*.*)|*.*"
         
-        dialog.Destroy()
+        # dialog = wx.FileDialog(
+        #     self,
+        #     message="Choose a file",
+        #     defaultDir="",
+        #     defaultFile="",
+        #     wildcard=wildcard,
+        #     style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
+        # )
+        
+        # #if dialog.ShowModal() == wx.ID_CANCEL:
+        #  #       return     # The user changed their mind
+        
+        # if dialog.ShowModal() == wx.ID_OK:
+        #     selected_path = dialog.GetPath()
+        #     print("Selected file:", selected_path)
+        
+        #dialog.Destroy()
    
     def OnSave(self, event):
         ## handle saving file
@@ -217,6 +236,9 @@ class MainFrame(wx.Frame):
         return 0
         
     def OnClickAnalyzer(self, event):
+        
+        # add an input analyzer to the notebook
+        self.m_notebook.AddPage(InputAnalyzer(), "Input Analyzer")
         return 0
     
     def OnUndo(self, event):
