@@ -90,17 +90,14 @@ class MainFrame(wx.Frame):
         # Set menu bar for this frame
         self.SetMenuBar(self.m_menubar)
         
-        self.m_center_pane = wx.Notebook(self)
         # generate the canvas
-        self.m_canvas = Canvas.Canvas(self.m_center_pane, self.m_debug_status_bar)
+        self.m_canvas = Canvas.Canvas(self.m_notebook, self.m_debug_status_bar)
         self.m_canvas.m_mainframe_reference = self
-        self.m_center_pane.AddPage(self.m_canvas, "Canvas")
         self.m_canvas.InitializeOriginLocation(self.GetSize())
         
         # add the canvas to the notebook
         self.m_notebook.AddPage(self.m_canvas, "Canvas")
         self.m_aui_manager.AddPane(self.m_notebook, wx.aui.AuiPaneInfo().CenterPane().Dockable(True))
-        self.m_aui_manager.AddPane(self.m_center_pane, wx.aui.AuiPaneInfo().CenterPane().Dockable(True))
         
         # simulation project
         self.m_simulation_project = SimulationProject()

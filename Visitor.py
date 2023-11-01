@@ -1,6 +1,4 @@
 import Utility
-from SimulationObjects import Source, Server, Sink
-
 ## DEFINE THE VISITOR PATTERN INTERFACE
 # need to visit each simulation object
 class Visitor:
@@ -16,7 +14,7 @@ class Visitor:
 
 ## IMPLEMENT THE VISITOR PATTERN INTERFACE
 class StatisticsVisitor(Visitor):
-    def visit_source(self, source : 'Source'):
+    def visit_source(self, source):
         source_statistics = [
             ("Time Utilized", source.m_time_utilized),
             ("Time Starved", source.m_time_starved),
@@ -26,7 +24,7 @@ class StatisticsVisitor(Visitor):
         
         return source_statistics
     
-    def visit_server(self, server : 'Server'):
+    def visit_server(self, server):
         server_statistics = [
             ("Time Utilized", server.m_time_utilized),
             ("Time Starved", server.m_time_starved),
@@ -39,7 +37,7 @@ class StatisticsVisitor(Visitor):
             
         return server_statistics
     
-    def visit_sink(self, sink : 'Sink'):
+    def visit_sink(self, sink):
         sink_statistics = [            
             ("Time Utilized", sink.m_time_utilized),
             ("Time Starved", sink.m_time_starved),
