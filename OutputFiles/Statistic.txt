@@ -1,0 +1,21 @@
+Source
+Time Utilized: 0
+Time Starved: 0
+Resource Utilization: 0
+Entities Created: 0
+
+Server
+Time Utilized: 0
+Time Starved: 0
+Resource Utilization: 0
+Number Processed: 0
+Wait Time: 0
+Total Service Time: 0
+Idle Time: 0
+
+Sink
+Time Utilized: 0
+Time Starved: 0
+Resource Utilization: 0
+Entities Destroyed: 0
+

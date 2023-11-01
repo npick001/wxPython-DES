@@ -159,34 +159,28 @@ class MainFrame(wx.Frame):
     def OnExit(self, event):
         self.Close()
             
-    def OnOpen(self, event):
+    def OnOpen(self, event):        
+        ## handle opening file
+        wildcard = "Text files (*.txt)|*.txt|All files (*.*)|*.*"
         
-        try:
-            print("OnOpen called")
-        # rest of your code
-        except Exception as e:
-            print(f"Exception occurred: {e}")
+        dialog = wx.FileDialog(
+            self,
+            message="Choose a file",
+            defaultDir="",
+            defaultFile="",
+            wildcard=wildcard,
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
+        )
         
-        # ## handle opening file
-        # wildcard = "Text files (*.txt)|*.txt|All files (*.*)|*.*"
+        #if dialog.ShowModal() == wx.ID_CANCEL:
+         #       return     # The user changed their mind
         
-        # dialog = wx.FileDialog(
-        #     self,
-        #     message="Choose a file",
-        #     defaultDir="",
-        #     defaultFile="",
-        #     wildcard=wildcard,
-        #     style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
-        # )
+        if dialog.ShowModal() == wx.ID_OK:
+            selected_path = dialog.GetPath()
+            print("Selected file:", selected_path)
         
-        # #if dialog.ShowModal() == wx.ID_CANCEL:
-        #  #       return     # The user changed their mind
-        
-        # if dialog.ShowModal() == wx.ID_OK:
-        #     selected_path = dialog.GetPath()
-        #     print("Selected file:", selected_path)
-        
-        #dialog.Destroy()
+        dialog.Destroy()
+        pass
    
     def OnSave(self, event):
         ## handle saving file

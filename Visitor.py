@@ -10,6 +10,9 @@ class Visitor:
     
     def visit_sink(self, sink : 'Sink'):
         pass    
+    
+    def visit_entity(self, entity : 'Entity'):
+        pass
     pass
 
 ## IMPLEMENT THE VISITOR PATTERN INTERFACE
@@ -45,5 +48,5 @@ class StatisticsVisitor(Visitor):
             ("Entities Destroyed", sink.sm_entitiesDestroyed),
         ]
         
-        return sink_statistics        
+        return sink_statistics           
     pass

@@ -18,8 +18,18 @@ class Entity:
         self.m_ID = Entity.m_nextID
         self.m_sourceID = -1
         
+        ## statitics
+        self.sm_waitTime = 0
+        self.sm_enterQueueTime = 0
+        self.sm_exitQueueTime = 0
+        self.sm_totalWaitTime = 0
+        self.sm_numTimesStopped = 0        
+        
         Entity.m_nextID += 1
         pass
+    
+    def Accept(self, visitor : 'Visitor'):
+        return visitor.visit_entity(self)
     
     @classmethod
     def New(cls) -> 'Entity':

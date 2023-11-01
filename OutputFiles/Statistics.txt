@@ -1,0 +1,21 @@
+Source
+Time Utilized: 0
+Time Starved: 0
+Resource Utilization: 0
+Entities Created: 10
+
+Server
+Time Utilized: 0
+Time Starved: 0
+Resource Utilization: 0
+Number Processed: 10
+Wait Time: 232.34233004754006
+Total Service Time: 19.150703990225704
+Idle Time: 0
+
+Sink
+Time Utilized: 0
+Time Starved: 0
+Resource Utilization: 0
+Entities Destroyed: 0
+

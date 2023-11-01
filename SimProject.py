@@ -4,6 +4,7 @@ from Entity import Entity
 from Canvas import Canvas
 from GraphicalNode import GraphicalNode, GSource, GServer, GSink
 from SimulationObjects import SimulationObject, Source, Server, Sink
+from Visitor import *
 
 from SimulationExecutive import GetSimulationTime, RunSimulation, TimeUnit
 
@@ -76,6 +77,41 @@ class SimulationProject:
     
     def Run(self) -> None:
         RunSimulation()
+        
+        # prompt the user for what file name they want to use to save the stats to
+        # then write the stats to the file
+        dlg = wx.FileDialog(self.m_canvas, "Save Simulation Statistics", "", "", "Text files (*.txt)|*.txt", wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        if dlg.ShowModal() == wx.ID_CANCEL:
+            return
+        else:
+            self.WriteSimulationStatistics(dlg.GetPath())
+            pass
+        pass
+    
+    def WriteSimulationStatistics(self, filename : str) -> None:
+        
+        # create the visitor
+        visitor = StatisticsVisitor()
+        
+        for node in self.m_instantiated_nodes:
+            node : 'SimulationObject'
+            
+            # accept returns a list of pairs
+            # the pairs are (string, float)
+            # then that needs to be written to the file
+            stats = node.Accept(visitor)
+            
+            Utility.write_to_file(filename, node.m_name + "\n", 'a')  
+            
+            stats : list
+            first = True
+            for stat in stats:
+                stat : tuple
+                Utility.write_to_file(filename, stat[0] + ": " + str(stat[1]) + "\n", 'a')
+                pass
+            
+            Utility.write_to_file(filename, "\n", 'a')          
+            pass
         pass
     
     def HasBeenBuilt(self) -> bool:

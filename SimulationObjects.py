@@ -107,8 +107,7 @@ class Source(SimulationObject):
         pass    
     
     def Accept(self, visitor : 'Visitor'):
-        visitor.visit_source(self)
-        pass
+        return visitor.visit_source(self)
     
     def NodeProcess(self, entity: Entity) -> None:
         ## SHOULD NEVER BE CALLED
@@ -129,6 +128,7 @@ class Source(SimulationObject):
     
     def ArriveEM(self):
         self.Depart(self.m_entity.New())
+        self.sm_entitiesCreated += 1
         
         if(self.m_infiniteGen == False):
             self.m_numToGen -= 1
@@ -177,8 +177,7 @@ class Server(SimulationObject):
         pass
     
     def Accept(self, visitor: Visitor):
-        visitor.visit_server(self)
-        pass
+        return visitor.visit_server(self)
     
     def NodeProcess(self, entity: Entity) -> None:
         self.m_queue.AddEntity(entity)
@@ -203,11 +202,16 @@ class Server(SimulationObject):
         pass
     def StartProcessingEM(self):
         self.m_state = self.State.BUSY
+        serviceTime = self.m_serviceDist.GetRV()
         
         entity : 'Entity'
         entity = self.m_queue.GetEntity()
+        entity.sm_exitQueueTime = GetSimulationTime()
+        entity.sm_waitTime = entity.sm_exitQueueTime - entity.sm_enterQueueTime
         
-        serviceTime = self.m_serviceDist.GetRV()
+        self.sm_waitTime += entity.sm_waitTime
+        self.sm_totalWaitTime += entity.sm_waitTime
+        self.sm_totalServiceTime += serviceTime
         
         message = "Time: " + str(GetSimulationTime()) + "\tServer " + str(self.m_id) + "\tStart Processing\n"
         print(message)
@@ -231,6 +235,9 @@ class Server(SimulationObject):
         pass
     def EndProcessingEM(self, entity : 'Entity'):
         self.m_state = self.State.IDLE
+        
+        self.sm_numberProcessed += 1
+        self.sm_totalProcessed += 1
         
         if not self.m_queue.IsEmpty():
             ScheduleEventIn(0.0, "Placeholder time unit", self.StartProcessingEA(self))
@@ -258,8 +265,7 @@ class Sink(SimulationObject):
         pass
     
     def Accept(self, visitor: Visitor):
-        visitor.visit_sink(self)
-        pass
+        return visitor.visit_sink(self)
     
     def NodeProcess(self, entity: Entity) -> None:
         
