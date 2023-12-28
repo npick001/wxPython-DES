@@ -9,6 +9,14 @@ class InputAnalyzer(wx.Panel):
         self.m_num_bins = 20
         hist_size = wx.Size(400, 300)
         self.m_histogram = HistogramPanel(self, hist_size, self.m_num_bins)  # Adjust size as needed
+        
+        # Slider for number of bins
+        self.bin_slider = wx.Slider(self, value=20, minValue=1, maxValue=100, style=wx.SL_HORIZONTAL)
+        self.bin_slider.Bind(wx.EVT_SLIDER, self.on_bin_slider_change)
+
+        # TextCtrl for manual bin input
+        self.bin_input = wx.TextCtrl(self, value="20", style=wx.TE_PROCESS_ENTER)
+        self.bin_input.Bind(wx.EVT_TEXT_ENTER, self.on_bin_change)
                 
         self.m_data_input_button = wx.Button(self, label="Load Data")
         self.m_data_input_button.Bind(wx.EVT_BUTTON, self.on_button_click)  # Add event binding for button click
@@ -26,20 +34,22 @@ class InputAnalyzer(wx.Panel):
     def AddComponents(self):
         # Button sizer for positioning the button
         button_sizer = wx.BoxSizer(wx.VERTICAL)
-        button_sizer.AddStretchSpacer(prop=2)
+        button_sizer.AddStretchSpacer(prop=1)
         
         # # Dropdown for color selection
         # self.color_choice = wx.Choice(self, choices=self.m_color_choices)
         # self.color_choice.Bind(wx.EVT_CHOICE, self.on_color_change)
-        
+           
         # Add button to the button sizer
         button_sizer.Add(self.m_data_input_button, 0, wx.SHAPED, wx.ALIGN_CENTER)
         button_sizer.Add(self.m_color_change_dropdown, 0, wx.SHAPED, wx.ALIGN_CENTER)
+        button_sizer.Add(self.bin_input, 0, wx.EXPAND | wx.TOP, 10)       
+        button_sizer.Add(self.bin_slider, 0, wx.EXPAND | wx.TOP, 10)
         button_sizer.AddStretchSpacer(prop=4)
 
         # Add button sizer and histogram panel to the main sizer
         self.m_sizer.Add(button_sizer, 1, wx.EXPAND | wx.ALL, 25)  # Adjust proportion and border as needed
-        self.m_sizer.Add(self.m_histogram, 2, wx.EXPAND | wx.ALL, 10)  # Adjust proportion and border as needed       
+        self.m_sizer.Add(self.m_histogram, 2, wx.EXPAND | wx.ALL, 10)  # Adjust proportion and border as needed     
         pass
     
     def ReadFile(self, filename):
@@ -92,5 +102,17 @@ class InputAnalyzer(wx.Panel):
     def on_color_change(self, event):
         selected_color = self.m_color_change_dropdown.GetValue()
         self.m_histogram.set_color(selected_color)
+        pass
+    
+    def on_bin_slider_change(self, event):
+        num_bins = self.bin_slider.GetValue()
+        self.bin_input.SetValue(str(num_bins))
+        self.m_histogram.set_num_bins(num_bins)
+        pass
+    
+    def on_bin_change(self, event):
+        num_bins = self.bin_input.GetValue()
+        self.bin_slider.SetValue(int(num_bins))
+        self.m_histogram.set_num_bins(int(num_bins))
         pass
     pass

@@ -56,6 +56,10 @@ class HistogramPanel(GraphingPanel):
         self.draw_graph()
         pass
     
+    def set_num_bins(self, num_bins):
+        self.m_num_bins = num_bins
+        self.draw_graph()
+        pass    
     pass
 
 class LineGraph(GraphingPanel):
