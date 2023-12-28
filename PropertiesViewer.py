@@ -21,6 +21,7 @@ class PropertiesViewer(wx.Panel):
         self.Bind(wx.EVT_SIZE, self.OnResize)
         self.Bind(wxpg.EVT_PG_CHANGED, self.OnDistributionChange)
         self.Bind(wxpg.EVT_PG_CHANGED, self.OnDistributionPropertyChange)
+        pass
             
     def Reset(self):       
         # iteratively remove all properties except the header
@@ -28,10 +29,12 @@ class PropertiesViewer(wx.Panel):
             self.m_property_grid.RemoveProperty(self.m_properties[i])
             pass
         pass
+    
     def Refresh(self):
         self.m_property_grid.Refresh()
         self.m_property_grid.Update()
         pass
+    
     def SetSize(self, size):
         width = size.x 
         height = size.y
@@ -44,6 +47,7 @@ class PropertiesViewer(wx.Panel):
     def SetSelectedObject(self, obj):
         self.m_selected_node = obj
         pass
+    
     def AddProperty(self, property):
         
         self.m_property_grid.Append(property)
@@ -51,6 +55,7 @@ class PropertiesViewer(wx.Panel):
         
         self.Refresh()        
         pass
+    
     def EditProperty(self, property : 'wxpg.PGProperty', new_value):
         
         property_changed = False
@@ -67,6 +72,7 @@ class PropertiesViewer(wx.Panel):
             wx.LogMessage("Selected property to edit does not exist.")
             pass
         pass
+    
     def RemoveProperty(self, property : 'wxpg.PGProperty'):
         
         if property in self.m_properties:
@@ -80,6 +86,7 @@ class PropertiesViewer(wx.Panel):
             wx.LogMessage("Selected property to remove does not exist.")
             pass
         pass
+    
     def ResetPropertyGrid(self):
         
         for prop in self.m_properties:
@@ -103,5 +110,6 @@ class PropertiesViewer(wx.Panel):
         pass
     def OnDistributionPropertyChange(self, event):
         pass
+    
     pass
 

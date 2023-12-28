@@ -22,27 +22,40 @@ class GraphingPanel(wx.Panel):
     pass
 
 class HistogramPanel(GraphingPanel):
-    def __init__(self, parent):
+    def __init__(self, parent, size, num_bins=20, data=np.random.uniform(0, 1, 1000)):
         super(HistogramPanel, self).__init__(parent)
         
         self.m_graph_type = self.GraphType.HISTOGRAM
+        self.m_data = data
+        self.m_size = size
+        self.m_color = "Blue"
         
         self.m_figure, self.m_ax = plt.subplots(figsize=(5, 4))
         self.m_canvas = FigureCanvas(self, -1, self.m_figure)
         self.m_sizer = wx.BoxSizer(wx.VERTICAL)
         self.m_sizer.Add(self.m_canvas, 1, wx.EXPAND)
-        self.m_num_bins = 20
+        self.m_num_bins = num_bins
         self.SetSizer(self.m_sizer)
         self.draw_graph()
         pass
 
-    def draw_graph(self, data):
-        self.m_ax.hist(data, bins=self.m_num_bins)
-        self.m_ax.set_title("Simple sin wave")
-        self.m_ax.set_xlabel("x")
-        self.m_ax.set_ylabel("y")
-        self.m_canvas.draw() #this shows a separate window for the graph
+    def draw_graph(self):
+        self.m_ax.clear()
+        
+        self.m_ax.hist(self.m_data, bins=self.m_num_bins, color=self.m_color)
+        self.m_ax.set_title("Histogram of Data")
+        self.m_ax.set_xlabel("Data")
+        self.m_ax.set_ylabel("Frequency")
+        #self.m_canvas.draw() #this shows a separate window for the graph
+        self.m_ax.figure.canvas.draw()
+        self.Refresh()
         pass
+    
+    def set_color(self, color):
+        self.m_color = color
+        self.draw_graph()
+        pass
+    
     pass
 
 class LineGraph(GraphingPanel):

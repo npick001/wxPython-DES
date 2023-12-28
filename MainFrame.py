@@ -229,7 +229,7 @@ class MainFrame(wx.Frame):
     def OnClickAnalyzer(self, event):
         
         # add an input analyzer to the notebook
-        self.m_notebook.AddPage(InputAnalyzer(), "Input Analyzer")
+        self.m_notebook.AddPage(InputAnalyzer(self), "Input Analyzer")
         return 0
     
     def OnUndo(self, event):

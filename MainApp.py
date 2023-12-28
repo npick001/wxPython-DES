@@ -12,17 +12,9 @@ class MyApp(wx.App):
         self.frame = MainFrame.GetInstance()
         self.frame.Show()
         return True
+    pass
 
-if __name__ == '__main__':  
-    # src = Source("Source", 10, Entity(GetSimulationTime()), Distributions.Exponential(1))
-    # server = Server("Server", Distributions.Triangular(1, 2, 3))
-    # sink = Sink("Sink")
-    
-    # src.AddNext(server)
-    # server.AddNext(sink)
-    
-    # RunSimulation()    
-    
+if __name__ == '__main__':    
     app = MyApp(False)
     app.MainLoop()
     pass
